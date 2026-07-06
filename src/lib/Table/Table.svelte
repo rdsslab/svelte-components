@@ -1,6 +1,6 @@
 <script>
 	import { onDestroy, onMount } from 'svelte';
-	import uFetch from '@edwinspire/universal-fetch';
+	import uFetch from '@rdsslab/uFetch';
 	import { Auto } from './Column/DefaultTypes.js';
 	import { storeChangedTables } from '../class/websocket.js';
 	import Level from '../Level/Level.svelte';

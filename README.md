@@ -5,7 +5,7 @@ A comprehensive collection of Svelte 5 components for building modern web applic
 ## Installation
 
 ```bash
-npm install @edwinspire/svelte-components
+npm install @rdsslab/svelte-components
 ```
 
 ## Usage
@@ -14,7 +14,7 @@ Import components directly from the library:
 
 ```svelte
 <script>
-  import { Table, Chart, Input, Modal } from '@edwinspire/svelte-components';
+  import { Table, Chart, Input, Modal } from '@rdsslab/svelte-components';
 </script>
 ```
 

@@ -34,7 +34,7 @@ declare const BasicSelect: import("svelte").Component<{
     onselect?: (arg0: {
         value: any;
     }) => void;
-} & Record<string, any>, {}, "label" | "option" | "options" | "isExpanded" | "css_class">;
+} & Record<string, any>, {}, "options" | "label" | "option" | "isExpanded" | "css_class">;
 /**
  * Represents the parameters supported by the BasicSelect component.
  */

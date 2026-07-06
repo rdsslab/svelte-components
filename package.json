@@ -1,10 +1,10 @@
 {
-  "name": "@edwinspire/svelte-components",
-  "version": "1.2.65",
+  "name": "@rdsslab/svelte-components",
+  "version": "1.2.66",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/edwinspire/svelte-components.git"
+    "url": "git+https://github.com/rdsslab/svelte-components.git"
   },
   "keywords": [
     "svelte",
@@ -15,9 +15,9 @@
   "author": "edwinspire",
   "license": "LGPL-3.0",
   "bugs": {
-    "url": "https://github.com/edwinspire/svelte-components.git/issues"
+    "url": "https://github.com/rdsslab/svelte-components.git/issues"
   },
-  "homepage": "https://github.com/edwinspire/svelte-components.git#readme",
+  "homepage": "https://github.com/rdsslab/svelte-components.git#readme",
   "description": "Varios componentes para Svelte",
   "scripts": {
     "dev": "vite dev",
@@ -90,7 +90,7 @@
     "@editorjs/paragraph": "^2.11.7",
     "@editorjs/quote": "^2.7.6",
     "@editorjs/table": "^2.4.4",
-    "@edwinspire/universal-fetch": "https://github.com/edwinspire/universal-fetch.git",
+    "@rdsslab/uFetch": "https://github.com/rdsslab/uFetch.git",
     "@fortawesome/fontawesome-free": "^7.2.0",
     "bulma": "^1.0.4",
     "codemirror": "^6.0.1",

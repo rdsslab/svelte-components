@@ -5,7 +5,7 @@
 	import Headers from './key_value/kv.svelte';
 	import Auth from './auth.svelte';
 	import Body from './body.svelte';
-	import uFetch from '@edwinspire/universal-fetch';
+	import uFetch from '@rdsslab/uFetch';
 	import JSONView from '../JSONView/index.svelte';
 
 	let {

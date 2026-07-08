@@ -60,14 +60,36 @@
 
 	let localDateTime = $derived.by(() => {
 		if (!value) return '';
-		return type == 'datetime-local'
-			? DateTime.fromISO(value, { zone: 'utc' }).toLocal().toFormat("yyyy-MM-dd'T'HH:mm")
-			: '';
+		if (type !== 'datetime-local') return '';
+
+		let d = DateTime.fromISO(value, { zone: 'utc' });
+		if (!d.isValid) {
+			d = DateTime.fromSQL(value, { zone: 'utc' });
+		}
+		if (!d.isValid) {
+			const parsedDate = new Date(value);
+			if (!isNaN(parsedDate.getTime())) {
+				d = DateTime.fromJSDate(parsedDate, { zone: 'utc' });
+			}
+		}
+		return d.isValid ? d.toLocal().toFormat("yyyy-MM-dd'T'HH:mm") : '';
 	});
 
 	let dateFormated = $derived.by(() => {
 		if (!value) return '';
-		return DateTime.fromISO(value, { zone: 'utc' }).toFormat('yyyy-MM-dd');
+		if (type !== 'date') return '';
+
+		let d = DateTime.fromISO(value, { zone: 'utc' });
+		if (!d.isValid) {
+			d = DateTime.fromSQL(value, { zone: 'utc' });
+		}
+		if (!d.isValid) {
+			const parsedDate = new Date(value);
+			if (!isNaN(parsedDate.getTime())) {
+				d = DateTime.fromJSDate(parsedDate, { zone: 'utc' });
+			}
+		}
+		return d.isValid ? d.toFormat('yyyy-MM-dd') : '';
 	});
 </script>
 

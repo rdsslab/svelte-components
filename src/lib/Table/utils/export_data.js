@@ -112,9 +112,20 @@ function FormatDataToExport(array_data, columns, text_length_limit_in_cell = 0) 
                 } else if (typeof value === 'string') {
                     // Try ISO first
                     dtLuxon = DateTime.fromISO(value);
-                    // If invalid and a format is provided, try that (though typically data is ISO or Date)
+                    // If invalid and a format is provided, try that
                     if (!dtLuxon.isValid && colConfig.fromFormat) {
                         dtLuxon = DateTime.fromFormat(value, colConfig.fromFormat);
+                    }
+                    // Try SQL
+                    if (!dtLuxon.isValid) {
+                        dtLuxon = DateTime.fromSQL(value);
+                    }
+                    // Fallback to JS Date
+                    if (!dtLuxon.isValid) {
+                        const parsedDate = new Date(value);
+                        if (!isNaN(parsedDate.getTime())) {
+                            dtLuxon = DateTime.fromJSDate(parsedDate);
+                        }
                     }
                 }
 

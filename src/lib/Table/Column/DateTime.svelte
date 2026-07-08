@@ -25,6 +25,17 @@
 		if (!d.isValid && fromFormat) {
 			d = DateTime.fromFormat(value, fromFormat);
 		}
+		// Try SQL format next
+		if (!d.isValid) {
+			d = DateTime.fromSQL(value);
+		}
+		// Fallback to standard JS Date parsing
+		if (!d.isValid) {
+			const parsedDate = new Date(value);
+			if (!isNaN(parsedDate.getTime())) {
+				d = DateTime.fromJSDate(parsedDate);
+			}
+		}
 		return d;
 	});
 

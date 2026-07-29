@@ -1,10 +1,11 @@
 <script>
-	import { onMount } from 'svelte';
 	import Chart from '../index.svelte';
 
 	let {
 		title = $bindable('Title'),
 		data = $bindable([]),
+		series = $bindable([]),
+		chart = $bindable(null),
 		option = $bindable({
 			title: {
 				text: title
@@ -14,6 +15,7 @@
 					saveAsImage: {}
 				}
 			},
+			legend: series.length > 0 ? { top: 24, type: 'scroll' } : undefined,
 			tooltip: {
 				trigger: 'axis',
 				formatter: function (params) {
@@ -39,9 +41,6 @@
 				type: 'time',
 				scale: false,
 				interval: 1000 * 60 * 30,
-				splitLine: {
-					show: true
-				},
 				splitLine: {
 					show: true, // Mostrar líneas de grilla del eje X
 					lineStyle: {
@@ -75,43 +74,9 @@
 					start: 0,
 					end: 20
 				}
-			],
-			series: [
-				{
-					name: 'Time Data',
-					type: 'line',
-					showSymbol: false,
-					smooth: true,
-					data: data,
-					large: true
-				}
 			]
 		})
 	} = $props();
-
-	/*
-	$effect(() => {
-		console.log("Data changed:", data);
-		if (data) {
-			if (myChart) {
-				myChart.setOption({
-					title: {
-						text: title
-					},
-					series: [
-						{
-							data: data
-						}
-					]
-				});
-			}
-		}
-	});
-	*/
-
-	onMount(() => {
-		//
-	});
 </script>
 
-<Chart bind:title bind:option bind:data></Chart>
+<Chart bind:title bind:option bind:data bind:series bind:chart></Chart>

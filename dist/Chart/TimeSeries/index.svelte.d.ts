@@ -6,10 +6,14 @@ type Index = {
 declare const Index: import("svelte").Component<{
     title?: string;
     data?: any[];
+    series?: any[];
+    chart?: any;
     option?: Record<string, any>;
-}, {}, "data" | "option" | "title">;
+}, {}, "data" | "option" | "title" | "series" | "chart">;
 type $$ComponentProps = {
     title?: string;
     data?: any[];
+    series?: any[];
+    chart?: any;
     option?: Record<string, any>;
 };

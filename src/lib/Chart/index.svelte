@@ -1,35 +1,60 @@
 <script>
 	import * as echarts from 'echarts';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
-	let { title = $bindable('Title'), data = $bindable([]), option = $bindable({}) } = $props();
+	let {
+		title = $bindable('Title'),
+		data = $bindable([]),
+		series = $bindable([]),
+		option = $bindable({}),
+		chart = $bindable(null)
+	} = $props();
 
-	var chartDom;
-	var myChart;
+	let chartDom;
+	let myChart;
+
+	function buildSeries() {
+		if (series && series.length > 0) {
+			return series.map((s) => ({
+				type: 'line',
+				showSymbol: false,
+				smooth: true,
+				large: true,
+				...s
+			}));
+		}
+		return [{ data }];
+	}
+
+	function handleResize() {
+		myChart?.resize();
+	}
 
 	$effect(() => {
-		//console.log("::::.> Data changed:");
-		if (data) {
-			//console.log('llega');
-			if (myChart) {
-				//	console.log('setea');
-				myChart.setOption({
-					title: {
-						text: title
-					},
-					series: [
-						{
-							data: data
-						}
-					]
-				});
-			}
+		if (myChart) {
+			myChart.setOption({
+				...option,
+				title: {
+					...option?.title,
+					text: title
+				},
+				series: buildSeries()
+			});
 		}
 	});
 
 	onMount(() => {
 		myChart = echarts.init(chartDom);
-		option && myChart.setOption(option);
+		chart = myChart;
+		if (option) {
+			myChart.setOption({ ...option, series: buildSeries() });
+		}
+		window.addEventListener('resize', handleResize);
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('resize', handleResize);
+		myChart?.dispose();
 	});
 </script>
 

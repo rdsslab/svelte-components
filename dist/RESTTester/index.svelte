@@ -56,6 +56,9 @@
 	let active_tab = $state(0);
 	let data_result = $state({ data: '', sizeKBResponse: -1 });
 	let running = $state(false);
+	let elapsed_ms = $state(0);
+	let uF; // current uFetch instance, kept accessible so it can be aborted
+	let timerInterval;
 	//	let sizeKBResponse = $state(0);
 
 	let methods = [
@@ -504,6 +507,7 @@
 
 	onDestroy(() => {
 		clearTimeout(timeoutChangeData);
+		clearInterval(timerInterval);
 	});
 </script>
 
@@ -660,7 +664,9 @@
 		<div class="control">
 			<div class="tags has-addons">
 				<span class="tag is-dark">Time</span>
-				{#if time_responde}
+				{#if running}
+					<span class="tag">{elapsed_ms} ms</span>
+				{:else if time_responde}
 					<span class="tag">{time_responde} ms</span>
 				{:else}
 					<span class="tag"> ms </span>
@@ -798,16 +804,26 @@
 					</span>
 					<span class="level-item">
 						<button
-							class="button is-success is-small is-outlined"
+							class="button is-small {running ? 'is-danger' : 'is-success'} is-outlined"
 							onclick={async () => {
+								if (running) {
+									const confirmedAbort = confirm(
+										'Are you sure you want to cancel the request in progress?'
+									);
+									if (confirmedAbort && uF) {
+										uF.abort('Cancelled by user');
+									}
+									return;
+								}
+
 								active_tab = 4; // Switch to Result tab
 
-								if (!running) {
+								{
 									running = true;
 									let data_send = undefined;
 
 									// Instantiate uFetch here to prevent Auth header leakage between requests
-									let uF = new uFetch();
+									uF = new uFetch();
 
 									//	console.log('URL: ', url, data);
 
@@ -858,6 +874,11 @@
 											resetResponse();
 											// Capturamos el tiempo inicial
 											let startTime = Date.now();
+											elapsed_ms = 0;
+											clearInterval(timerInterval);
+											timerInterval = setInterval(() => {
+												elapsed_ms = Date.now() - startTime;
+											}, 100);
 
 											if (
 												data.auth &&
@@ -887,6 +908,7 @@
 
 											// Calculamos la diferencia en milisegundos
 											time_responde = endTime - startTime;
+											clearInterval(timerInterval);
 											data_result.contentType = last_response.headers.get('Content-Type') || '';
 											//alert(last_response.ok);
 											if (last_response.ok) {
@@ -946,8 +968,13 @@
 											}
 										} catch (error) {
 											running = false;
+											clearInterval(timerInterval);
+											time_responde = Date.now() - startTime;
 											//console.error(error);
-											data_result.error = error.message || error;
+											data_result.error =
+												error?.name === 'AbortError'
+													? 'Request cancelled by user.'
+													: error.message || error;
 											// alert(error); // Removed alert
 										}
 									} else {
@@ -956,19 +983,17 @@
 									}
 
 									running = false;
-								} else {
-									// alert('There is an execution in progress'); // Removed alert
 								}
 							}}
 						>
 							<span class="icon is-small">
 								{#if running}
-									<i class="fa-solid fa-cog fa-spin"></i>
+									<i class="fa-solid fa-stop"></i>
 								{:else}
 									<i class="fa-solid fa-play"></i>
 								{/if}
 							</span>
-							<span>Execute</span>
+							<span>{running ? 'Cancel' : 'Execute'}</span>
 						</button>
 					</span>
 				</div>

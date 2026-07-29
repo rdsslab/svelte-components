@@ -23,7 +23,7 @@
 				...s
 			}));
 		}
-		return [{ data }];
+		return [{ type: 'line', showSymbol: false, smooth: true, large: true, data }];
 	}
 
 	function handleResize() {

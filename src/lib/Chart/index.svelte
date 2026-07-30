@@ -31,15 +31,20 @@
 	}
 
 	$effect(() => {
+		// Leer las props reactivas de forma incondicional: si quedan detrás del guard de
+		// `myChart`, en el primer render (antes de que onMount asigne myChart) este efecto
+		// no registraría ninguna dependencia y nunca se volvería a ejecutar.
+		const nextOption = {
+			...option,
+			title: {
+				...option?.title,
+				text: title
+			},
+			series: buildSeries()
+		};
+
 		if (myChart) {
-			myChart.setOption({
-				...option,
-				title: {
-					...option?.title,
-					text: title
-				},
-				series: buildSeries()
-			});
+			myChart.setOption(nextOption);
 		}
 	});
 

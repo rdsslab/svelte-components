@@ -8,14 +8,16 @@
 		chart = $bindable(null),
 		option = $bindable({
 			title: {
-				text: title
+				text: title,
+				left: 'center'
 			},
 			toolbox: {
 				feature: {
 					saveAsImage: {}
 				}
 			},
-			legend: series.length > 0 ? { top: 24, type: 'scroll' } : undefined,
+			legend: series.length > 0 ? { top: 36, left: 'center', type: 'scroll' } : undefined,
+			grid: series.length > 0 ? { top: 80, left: 48, right: 24, bottom: 70 } : undefined,
 			tooltip: {
 				trigger: 'axis',
 				formatter: function (params) {

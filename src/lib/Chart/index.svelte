@@ -53,7 +53,13 @@
 		}
 
 		if (myChart) {
-			myChart.setOption(nextOption);
+			// `replaceMerge` para 'series': por defecto ECharts fusiona el arreglo de series
+			// por índice, así que si el nuevo arreglo es más corto o corresponde a otro
+			// conjunto de series (ej. el consumidor cambia de filtro y ahora hay menos/otras
+			// series), las series "sobrantes" de la llamada anterior quedan dibujadas encima
+			// de las nuevas en vez de desaparecer. replaceMerge le dice a ECharts que
+			// reemplace el conjunto completo de series por el actual.
+			myChart.setOption(nextOption, { replaceMerge: ['series'] });
 			dataZoomApplied = true;
 		}
 	});

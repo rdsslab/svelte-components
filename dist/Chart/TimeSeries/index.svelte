@@ -19,21 +19,39 @@
 			legend: series.length > 0 ? { top: 36, left: 'center', type: 'scroll' } : undefined,
 			grid: series.length > 0 ? { top: 80, left: 48, right: 24, bottom: 70 } : undefined,
 			tooltip: {
-				trigger: 'axis',
+				// 'item' en vez de 'axis': con muchas series cuyos puntos no caen en el mismo
+				// instante de tiempo (ej. una serie por endpoint, cada una con sus propios
+				// timestamps de request), 'axis' junta en un solo tooltip el punto más cercano
+				// de cada serie — ilegible con decenas de series. 'item' muestra únicamente el
+				// punto exacto bajo el cursor.
+				trigger: 'item',
 				formatter: function (params) {
-					// Aqui para darle formato al texto del tooltip
-					//console.log(params);
-					params = params[0];
-					var date = new Date(params.name);
-					return (
-						date.getDate() +
-						'/' +
-						(date.getMonth() + 1) +
-						'/' +
-						date.getFullYear() +
-						' : ' +
-						params.value[1]
-					);
+					// Genérico: no asume nada sobre qué representa la serie (endpoint, métrica,
+					// etc.) — solo usa lo que ECharts ya sabe (seriesName) y lo que cada punto
+					// trae (fecha/hora en value[0], valor en value[1]).
+					var points = Array.isArray(params) ? params : [params];
+					return points
+						.map(function (p) {
+							var date = new Date(p.value[0]);
+							var pad = function (n) {
+								return String(n).padStart(2, '0');
+							};
+							var formattedDate =
+								pad(date.getDate()) +
+								'/' +
+								pad(date.getMonth() + 1) +
+								'/' +
+								date.getFullYear() +
+								' ' +
+								pad(date.getHours()) +
+								':' +
+								pad(date.getMinutes()) +
+								':' +
+								pad(date.getSeconds());
+							var label = p.seriesName ? p.seriesName + '<br/>' : '';
+							return label + formattedDate + ' : ' + p.value[1];
+						})
+						.join('<br/><br/>');
 				},
 				axisPointer: {
 					animation: false

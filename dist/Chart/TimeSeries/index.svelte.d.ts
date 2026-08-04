@@ -8,12 +8,14 @@ declare const Index: import("svelte").Component<{
     data?: any[];
     series?: any[];
     chart?: any;
+    tooltipFormatter?: any;
     option?: Record<string, any>;
-}, {}, "data" | "option" | "title" | "series" | "chart">;
+}, {}, "data" | "option" | "title" | "series" | "chart" | "tooltipFormatter">;
 type $$ComponentProps = {
     title?: string;
     data?: any[];
     series?: any[];
     chart?: any;
+    tooltipFormatter?: any;
     option?: Record<string, any>;
 };

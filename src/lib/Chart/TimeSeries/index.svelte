@@ -6,6 +6,7 @@
 		data = $bindable([]),
 		series = $bindable([]),
 		chart = $bindable(null),
+		tooltipFormatter = $bindable(undefined),
 		option = $bindable({
 			title: {
 				text: title,
@@ -25,7 +26,7 @@
 				// de cada serie — ilegible con decenas de series. 'item' muestra únicamente el
 				// punto exacto bajo el cursor.
 				trigger: 'item',
-				formatter: function (params) {
+				formatter: tooltipFormatter || function (params) {
 					// Genérico: no asume nada sobre qué representa la serie (endpoint, métrica,
 					// etc.) — solo usa lo que ECharts ya sabe (seriesName) y lo que cada punto
 					// trae (fecha/hora en value[0], valor en value[1]).

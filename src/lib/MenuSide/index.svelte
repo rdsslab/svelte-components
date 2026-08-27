@@ -249,6 +249,11 @@
 		justify-content: center;
 	}
 
+	.sidebar.icons-only .sidebar-header {
+		padding: 0;
+		justify-content: center;
+	}
+
 	/* Sidebar Hidden State */
 	.sidebar.hidden {
 		left: calc(-1 * var(--sidebar-width));
@@ -299,12 +304,23 @@
 	.logo-icon {
 		width: 40px;
 		height: 40px;
+		flex-shrink: 0;
 		background: var(--sidebar-hover);
 		border-radius: 10px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 20px;
+		overflow: hidden;
+	}
+
+	.logo-icon :global(img),
+	.logo-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
 	}
 
 	.logo-text {

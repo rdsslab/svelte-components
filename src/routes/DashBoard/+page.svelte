@@ -4,7 +4,7 @@
 
 	let menu = [
 		{
-			title: 'OpenFusionAPI',
+			title: '',
 		
 			items: [
 				{ label: 'App', icon: ' fa-brands fa-font-awesome ', link: '' }

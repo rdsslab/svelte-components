@@ -68,34 +68,38 @@
 <div class="tabs is-boxed {classSize} tab-margin" role="tablist" aria-label="Tabs">
 	<ul>
 		{#each tabs as item, i (i)}
-			<li class={active === i ? 'is-active' : ''} role="presentation">
-				<button
+			<li
+				class={active === i ? 'is-active' : ''}
+				role="presentation"
+			>
+				<a
 					bind:this={tabRefs[i]}
-					type="button"
 					role="tab"
 					id="tab-{i}"
 					aria-selected={active === i}
 					aria-controls="tabpanel-{i}"
 					aria-disabled={item.disabled || false}
 					tabindex={active === i ? 0 : -1}
-					disabled={item.disabled}
-					onclick={() => selectTab(i)}
+					onclick={(e) => {
+						if (item.disabled) e.preventDefault();
+						selectTab(i);
+					}}
 					onkeydown={(e) => handleKeydown(e, i)}
 				>
 					{#if item.disabled}
-						<span class="icon {classSize}">
+						<span class="icon is-small">
 							<i class="fa-solid fa-ban" aria-hidden="true"></i>
 						</span>
 						<span>{item.label}</span>
 					{:else if item.classIcon}
-						<span class="icon {classSize}">
+						<span class="icon is-small">
 							<i class={item.classIcon} aria-hidden="true"></i>
 						</span>
 						<span>{item.label}</span>
 					{:else}
 						{item.label}
 					{/if}
-				</button>
+				</a>
 			</li>
 		{/each}
 	</ul>

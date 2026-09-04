@@ -16,6 +16,14 @@ declare const Modal: import("svelte").Component<{
      * - Determines if a large top-right closing 'X' button should be displayed.
      */
     showCloseButton?: boolean;
+    /**
+     * - Whether the modal closes when Escape is pressed.
+     */
+    closeOnEscape?: boolean;
+    /**
+     * - Whether the modal closes when clicking the background.
+     */
+    closeOnBackground?: boolean;
 } & Record<string, any>, {}, "show" | "showCloseButton">;
 /**
  * Represents the parameters supported by the base Modal component.
@@ -33,4 +41,12 @@ type ModalProps = {
      * - Determines if a large top-right closing 'X' button should be displayed.
      */
     showCloseButton?: boolean;
+    /**
+     * - Whether the modal closes when Escape is pressed.
+     */
+    closeOnEscape?: boolean;
+    /**
+     * - Whether the modal closes when clicking the background.
+     */
+    closeOnBackground?: boolean;
 };

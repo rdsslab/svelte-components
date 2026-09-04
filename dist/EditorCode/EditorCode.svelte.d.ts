@@ -3,6 +3,7 @@ type EditorCode = SvelteComponent<{
     left?: any;
     right?: any;
     code?: string;
+    reset?: () => void;
     onchange?: any;
     lang?: string;
     showFormat?: boolean;
@@ -13,7 +14,6 @@ type EditorCode = SvelteComponent<{
     showCode?: boolean;
     setCode?: (newCode: any) => void;
     getCode?: () => any;
-    reset?: () => void;
 }, {
     change: CustomEvent<any>;
 } & {
@@ -29,6 +29,7 @@ declare const EditorCode: $$__sveltets_2_IsomorphicComponent<{
     left?: any;
     right?: any;
     code?: string;
+    reset?: () => void;
     onchange?: any;
     lang?: string;
     showFormat?: boolean;
@@ -39,7 +40,6 @@ declare const EditorCode: $$__sveltets_2_IsomorphicComponent<{
     showCode?: boolean;
     setCode?: (newCode: any) => void;
     getCode?: () => any;
-    reset?: () => void;
 }, {
     change: CustomEvent<any>;
 } & {

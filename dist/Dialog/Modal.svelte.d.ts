@@ -32,6 +32,14 @@ declare const Modal: import("svelte").Component<{
      * - Text label shown on the secondary cancel button.
      */
     label_cancel?: string;
+    /**
+     * - Whether the modal closes when Escape is pressed.
+     */
+    closeOnEscape?: boolean;
+    /**
+     * - Whether the modal closes when clicking the background.
+     */
+    closeOnBackground?: boolean;
 } & Record<string, any>, {}, "show">;
 import Modal from '../Modal/Modal.svelte';
 /**
@@ -66,4 +74,12 @@ type DialogModalProps = {
      * - Text label shown on the secondary cancel button.
      */
     label_cancel?: string;
+    /**
+     * - Whether the modal closes when Escape is pressed.
+     */
+    closeOnEscape?: boolean;
+    /**
+     * - Whether the modal closes when clicking the background.
+     */
+    closeOnBackground?: boolean;
 };

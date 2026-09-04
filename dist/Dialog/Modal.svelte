@@ -2,7 +2,7 @@
 	import Modal from '../Modal/Modal.svelte';
 	/**
 	 * Represents the configurable properties for the Dialog Modal component.
-	 * 
+	 *
 	 * @typedef {Object} DialogModalProps
 	 * @property {boolean} [show=false] - Boolean state to control whether the dialog is open or strictly hidden.
 	 * @property {import('svelte').Snippet} [title] - Svelte snippet used to render the card's top header/title text.
@@ -11,6 +11,8 @@
 	 * @property {import('svelte').Snippet} [body] - Svelte snippet used to render the main body logic and text.
 	 * @property {string} [label_accept='ACCEPT'] - Text label shown on the primary accept button.
 	 * @property {string} [label_cancel='CANCEL'] - Text label shown on the secondary cancel button.
+	 * @property {boolean} [closeOnEscape=true] - Whether the modal closes when Escape is pressed.
+	 * @property {boolean} [closeOnBackground=true] - Whether the modal closes when clicking the background.
 	 */
 
 	/** @type {DialogModalProps & Record<string, any>} */
@@ -21,11 +23,13 @@
 		onaccept,
 		body,
 		label_accept = 'ACCEPT',
-		label_cancel = 'CANCEL'
+		label_cancel = 'CANCEL',
+		closeOnEscape = true,
+		closeOnBackground = true
 	} = $props();
 </script>
 
-<Modal bind:show>
+<Modal bind:show {closeOnEscape} {closeOnBackground}>
 	<div class="modal-card">
 		<header class="modal-card-head has-background-dark">
 			<p class="modal-card-title has-text-white">
@@ -77,6 +81,10 @@
 	.modal-card-foot,
 	.modal-card-head {
 		padding: 10px !important;
+	}
+	.modal-card-foot {
+		display: flex;
+		gap: 0.5rem;
 	}
 	.modal-card-title {
 		font-size: 1rem !important;

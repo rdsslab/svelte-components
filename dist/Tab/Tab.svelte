@@ -1,90 +1,124 @@
 <script>
-	//import { createEventDispatcher } from 'svelte';
 	/**
-	 * Represents the properties available for the Tab component.
-	 * 
-	 * @typedef {Object} TabProps
-	 * @property {string} [classSize='is-small'] - The Bulma size class for the tabs (e.g., 'is-small', 'is-medium', 'is-large').
-	 * @property {function(Object): void} [onselect] - Event callback fired when a tab is clicked. Receives an object with tab details.
-	 * @property {Array<{label: string, classIcon?: string, disabled?: boolean, component?: import('svelte').Snippet, alias?: string}>} [tabs] - Definition array for rendering the tabs. 
-	 * @property {number} [active=0] - The index of the currently active/selected tab.
-	 * @property {import('svelte').Snippet} [children] - Optional snippet rendered at the bottom of the active tab.
+	 * @typedef {Object} TabItem
+	 * @property {string} label - Display text for the tab.
+	 * @property {string} [classIcon] - Bulma/FontAwesome icon class (e.g., 'fas fa-home').
+	 * @property {boolean} [disabled=false] - Whether the tab is disabled.
+	 * @property {import('svelte').Snippet} [component] - Snippet rendered as tab content.
+	 * @property {string} [alias] - Optional alias passed to the onselect callback.
 	 */
 
-	/** @type {TabProps & Record<string, any>} */
+	/** @type {{ classSize?: string, onselect?: (e: {label: string, index: number, alias?: string}) => void, tabs?: TabItem[], active?: number, children?: import('svelte').Snippet }} & Record<string, any> */
 	let {
 		classSize = $bindable('is-small'),
 		onselect = (e) => {},
-		tabs = $bindable([
-			{
-				label: 'Pictures',
-				classIcon: 'fas fa-picture',
-				disabled: true
-			},
-			{ label: 'Calcs', classIcon: 'fas fa-picture' },
-			{ label: 'Film', classIcon: 'fas fa-film', disabled: true }
-		]),
+		tabs = $bindable([]),
 		active = $bindable(0),
 		children
 	} = $props();
+
+	let tabRefs = $state([]);
+
+	function handleKeydown(e, index) {
+		const enabled = tabs
+			.map((t, i) => ({ t, i }))
+			.filter(({ t }) => !t.disabled);
+
+		const currentEnabledIdx = enabled.findIndex(({ i }) => i === index);
+		if (currentEnabledIdx === -1) return;
+
+		let targetEnabledIdx = currentEnabledIdx;
+
+		switch (e.key) {
+			case 'ArrowRight':
+			case 'ArrowDown':
+				e.preventDefault();
+				targetEnabledIdx = (currentEnabledIdx + 1) % enabled.length;
+				break;
+			case 'ArrowLeft':
+			case 'ArrowUp':
+				e.preventDefault();
+				targetEnabledIdx = (currentEnabledIdx - 1 + enabled.length) % enabled.length;
+				break;
+			case 'Home':
+				e.preventDefault();
+				targetEnabledIdx = 0;
+				break;
+			case 'End':
+				e.preventDefault();
+				targetEnabledIdx = enabled.length - 1;
+				break;
+			default:
+				return;
+		}
+
+		const targetIndex = enabled[targetEnabledIdx].i;
+		selectTab(targetIndex);
+		tabRefs[targetIndex]?.focus();
+	}
+
+	function selectTab(index) {
+		const item = tabs[index];
+		if (!item || item.disabled) return;
+		active = index;
+		onselect({ label: item.label, index, alias: item.alias });
+	}
 </script>
 
-<div class="tabs is-boxed {classSize} tabMargin">
+<div class="tabs is-boxed {classSize} tab-margin" role="tablist" aria-label="Tabs">
 	<ul>
-		{#if tabs}
-			{#each tabs as item, i}
-				<li class={active == i ? 'is-active' : ''}>
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<!-- svelte-ignore a11y_missing_attribute -->
-					<a
-						onclick={() => {
-							if (!item.disabled) {
-								active = i;
-								// Solo dispara cuando no está deshabilitado
-								if (onselect) {
-									onselect({ label: item.label, index: i, alias: item.alias });
-								}
-							}
-						}}
-					>
-						{#if item.disabled}
-							<span class="icon {classSize}"
-								><i class="fa-solid fa-ban" aria-hidden="true"></i></span
-							>
-							<span>{item.label}</span>
-						{:else if item.classIcon && item.classIcon.length > 3}
-							<span class="icon {classSize}"><i class={item.classIcon} aria-hidden="true"></i></span
-							>
-							<span>{item.label}</span>
-						{:else}
-							{item.label}
-						{/if}
-					</a>
-				</li>
-			{/each}
-		{/if}
+		{#each tabs as item, i (i)}
+			<li class={active === i ? 'is-active' : ''} role="presentation">
+				<button
+					bind:this={tabRefs[i]}
+					type="button"
+					role="tab"
+					id="tab-{i}"
+					aria-selected={active === i}
+					aria-controls="tabpanel-{i}"
+					aria-disabled={item.disabled || false}
+					tabindex={active === i ? 0 : -1}
+					disabled={item.disabled}
+					onclick={() => selectTab(i)}
+					onkeydown={(e) => handleKeydown(e, i)}
+				>
+					{#if item.disabled}
+						<span class="icon {classSize}">
+							<i class="fa-solid fa-ban" aria-hidden="true"></i>
+						</span>
+						<span>{item.label}</span>
+					{:else if item.classIcon}
+						<span class="icon {classSize}">
+							<i class={item.classIcon} aria-hidden="true"></i>
+						</span>
+						<span>{item.label}</span>
+					{:else}
+						{item.label}
+					{/if}
+				</button>
+			</li>
+		{/each}
 	</ul>
 </div>
 
-{#if Array.isArray(tabs)}
-	{#each tabs as element, i}
+{#each tabs as tab, i (i)}
+	{#if tab.component && active === i && !tab.disabled}
 		<div
-			style="display: {active == i && element && element.component && !element.disabled
-				? 'block'
-				: 'none'};"
+			id="tabpanel-{i}"
+			role="tabpanel"
+			aria-labelledby="tab-{i}"
 		>
-			{@render element.component?.()}
+			{@render tab.component()}
 		</div>
-	{/each}
-{/if}
+	{/if}
+{/each}
 
 {#if children}
 	{@render children()}
 {/if}
 
 <style>
-	.tabMargin {
+	.tab-margin {
 		margin-bottom: 0.75em;
 	}
 </style>

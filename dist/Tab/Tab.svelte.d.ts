@@ -1,64 +1,69 @@
 export default Tab;
 type Tab = {
     $on?(type: string, callback: (e: any) => void): () => void;
-    $set?(props: Partial<TabProps & Record<string, any>>): void;
+    $set?(props: Partial<{
+        classSize?: string;
+        onselect?: (e: {
+            label: string;
+            index: number;
+            alias?: string;
+        }) => void;
+        tabs?: TabItem[];
+        active?: number;
+        children?: Snippet<[]>;
+    }>): void;
 };
 declare const Tab: import("svelte").Component<{
-    /**
-     * - The Bulma size class for the tabs (e.g., 'is-small', 'is-medium', 'is-large').
-     */
     classSize?: string;
-    /**
-     * - Event callback fired when a tab is clicked. Receives an object with tab details.
-     */
-    onselect?: (arg0: any) => void;
-    /**
-     * - Definition array for rendering the tabs.
-     */
-    tabs?: Array<{
+    onselect?: (e: {
         label: string;
-        classIcon?: string;
-        disabled?: boolean;
-        component?: import("svelte").Snippet;
+        index: number;
         alias?: string;
-    }>;
-    /**
-     * - The index of the currently active/selected tab.
-     */
-    active?: number;
-    /**
-     * - Optional snippet rendered at the bottom of the active tab.
-     */
-    children?: import("svelte").Snippet;
-} & Record<string, any>, {}, "classSize" | "tabs" | "active">;
-/**
- * Represents the properties available for the Tab component.
- */
-type TabProps = {
-    /**
-     * - The Bulma size class for the tabs (e.g., 'is-small', 'is-medium', 'is-large').
-     */
-    classSize?: string;
-    /**
-     * - Event callback fired when a tab is clicked. Receives an object with tab details.
-     */
-    onselect?: (arg0: any) => void;
-    /**
-     * - Definition array for rendering the tabs.
-     */
-    tabs?: Array<{
+    }) => void;
+    tabs?: {
+        /**
+         * - Display text for the tab.
+         */
         label: string;
+        /**
+         * - Bulma/FontAwesome icon class (e.g., 'fas fa-home').
+         */
         classIcon?: string;
+        /**
+         * - Whether the tab is disabled.
+         */
         disabled?: boolean;
+        /**
+         * - Snippet rendered as tab content.
+         */
         component?: import("svelte").Snippet;
+        /**
+         * - Optional alias passed to the onselect callback.
+         */
         alias?: string;
-    }>;
-    /**
-     * - The index of the currently active/selected tab.
-     */
+    }[];
     active?: number;
-    /**
-     * - Optional snippet rendered at the bottom of the active tab.
-     */
     children?: import("svelte").Snippet;
+}, {}, "classSize" | "tabs" | "active">;
+type TabItem = {
+    /**
+     * - Display text for the tab.
+     */
+    label: string;
+    /**
+     * - Bulma/FontAwesome icon class (e.g., 'fas fa-home').
+     */
+    classIcon?: string;
+    /**
+     * - Whether the tab is disabled.
+     */
+    disabled?: boolean;
+    /**
+     * - Snippet rendered as tab content.
+     */
+    component?: import("svelte").Snippet;
+    /**
+     * - Optional alias passed to the onselect callback.
+     */
+    alias?: string;
 };

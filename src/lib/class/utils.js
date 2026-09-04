@@ -31,11 +31,7 @@ export class Notifications {
 	 * Creates an instance of Notifications.
 	 */
 	constructor() {
-		/*
-		notifications_store.subscribe((value) => {
-			console.log('notifications_store: ', value);
-		}); 
-		*/
+		this._intervals = new Map();
 	}
 
 	/**
@@ -44,22 +40,55 @@ export class Notifications {
 	 * @param {Object} new_notify - The notification object to add.
 	 * @param {string} [new_notify.id] - Optional ID. One will be generated if not provided.
 	 * @param {number} [new_notify.timeout=5000] - Duration in milliseconds before the notification is automatically removed.
-	 * @param {string} [new_notify.message] - The message text of the notification (example property).
-	 * @param {string} [new_notify.type] - The type of notification, e.g., 'success', 'error', 'warning' (example property).
+	 * @param {string} [new_notify.message] - The message text of the notification.
+	 * @param {string} [new_notify.title] - The title of the notification.
+	 * @param {string} [new_notify.color] - The color type: 'success', 'danger', 'warning', 'info'.
 	 */
 	push(new_notify) {
-		//	console.log(notifications_store);
 		new_notify.id = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+		const timeout = new_notify.timeout || 5000;
+		new_notify.timeout = timeout;
+		new_notify._remaining = timeout;
+		new_notify._lastTick = Date.now();
+		new_notify.paused = false;
 
-		//notifications_store.set(['Hola mundo']);
 		notifications_store.update((u) => {
-			//			console.log('>>', u.length);
 			u.push(new_notify);
-			setTimeout(() => {
-				this.removeNotify(new_notify.id);
-			}, new_notify.timeout || 5000);
+			this._startTimer(new_notify.id, timeout);
 			return u;
 		});
+	}
+
+	_startTimer(id, timeout) {
+		if (this._intervals.has(id)) {
+			clearInterval(this._intervals.get(id));
+		}
+		const interval = setInterval(() => {
+			notifications_store.update((u) => {
+				const n = u.find((n) => n.id === id);
+				if (!n) {
+					clearInterval(interval);
+					this._intervals.delete(id);
+					return u;
+				}
+				if (n.paused) {
+					n._lastTick = Date.now();
+					return u;
+				}
+				const now = Date.now();
+				const elapsed = now - n._lastTick;
+				n._remaining -= elapsed;
+				n._lastTick = now;
+				if (n._remaining <= 0) {
+					const index = u.findIndex((n) => n.id === id);
+					if (index !== -1) u.splice(index, 1);
+					clearInterval(interval);
+					this._intervals.delete(id);
+				}
+				return u;
+			});
+		}, 100);
+		this._intervals.set(id, interval);
 	}
 
 	/**
@@ -68,11 +97,14 @@ export class Notifications {
 	 * @param {string} id - The unique identifier of the notification to be removed.
 	 */
 	removeNotify(id) {
+		if (this._intervals.has(id)) {
+			clearInterval(this._intervals.get(id));
+			this._intervals.delete(id);
+		}
 		notifications_store.update((u) => {
 			const index = u.findIndex((obj) => obj.id === id);
 			if (index !== -1) {
 				u.splice(index, 1);
-				//	console.log(`Objeto con ID ${id} eliminado. Lista actualizada:`, u);
 			}
 			return u;
 		});

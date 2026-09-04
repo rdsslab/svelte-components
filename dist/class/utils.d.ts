@@ -10,21 +10,25 @@ export function equalObjs(value: any, new_value: any): boolean;
  * Provides methods to add and automatically or manually remove notifications from the global store.
  */
 export class Notifications {
+    _intervals: Map<any, any>;
     /**
      * Adds a new notification to the global store and automatically schedules its removal.
      *
      * @param {Object} new_notify - The notification object to add.
      * @param {string} [new_notify.id] - Optional ID. One will be generated if not provided.
      * @param {number} [new_notify.timeout=5000] - Duration in milliseconds before the notification is automatically removed.
-     * @param {string} [new_notify.message] - The message text of the notification (example property).
-     * @param {string} [new_notify.type] - The type of notification, e.g., 'success', 'error', 'warning' (example property).
+     * @param {string} [new_notify.message] - The message text of the notification.
+     * @param {string} [new_notify.title] - The title of the notification.
+     * @param {string} [new_notify.color] - The color type: 'success', 'danger', 'warning', 'info'.
      */
     push(new_notify: {
         id?: string;
         timeout?: number;
         message?: string;
-        type?: string;
+        title?: string;
+        color?: string;
     }): void;
+    _startTimer(id: any, timeout: any): void;
     /**
      * Removes a notification from the global notifications store by its ID.
      *

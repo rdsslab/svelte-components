@@ -27,9 +27,6 @@
 		}
 	]);
 
-	let topRightNavBar = $state([snp_user_profile, snp_notifications]);
-	let topLeftNavBar = $state([snp_search]);
-
 </script>
 
 {#snippet snp_logo_icon()}
@@ -69,10 +66,10 @@
 	bind:logoText
 	logoIcon={snp_logo_icon}
 	bind:menu
-	bind:topRightNavBar
-	bind:topLeftNavBar
+	topRightNavBar={[snp_user_profile, snp_notifications]}
+	topLeftNavBar={[snp_search]}
 >
-	<div class="container is-fluid">
+	<div class="container is-fluid appbase-demo">
 		<h1 class="title mt-5">Dashboard Overview</h1>
 		<div class="columns is-multiline">
 			<div class="column is-3">
@@ -123,16 +120,16 @@
 									<th>Value</th>
 								</tr>
 							</thead>
-							<tbody>
-								<tr>
-									<td>CPU Usage</td>
-									<td>{Math.floor(Math.random() * 100)}%</td>
-								</tr>
-								<tr>
-									<td>Memory</td>
-									<td>{Math.floor(Math.random() * 32)}GB</td>
-								</tr>
-							</tbody>
+						<tbody>
+							<tr>
+								<td>CPU Usage</td>
+								<td>{(i * 17 + 23) % 100}%</td>
+							</tr>
+							<tr>
+								<td>Memory</td>
+								<td>{(i * 7 + 3) % 32}GB</td>
+							</tr>
+						</tbody>
 						</table>
 					</div>
 				</div>
@@ -144,28 +141,28 @@
 <style>
 	/* Los colores base ahora vienen de AppBase automáticamente */
 	
-	:global(.box) {
+	.box {
 		background-color: var(--topbar-bg) !important; /* Reutilizamos el fondo de topbar para las cajas */
 		color: var(--text-primary) !important;
 		border: 1px solid var(--border-color) !important;
 	}
 
-	:global(.input) {
+	.input {
 		background-color: var(--app-bg) !important;
 		color: var(--text-primary) !important;
 		border-color: var(--border-color) !important;
 	}
 
-	:global(.title), :global(.subtitle) {
+	.title, .subtitle {
 		color: var(--text-primary) !important;
 	}
 
-	:global(.table) {
+	.table {
 		background-color: transparent !important;
 		color: var(--text-primary) !important;
 	}
 
-	:global(.table thead th) {
+	.table thead th {
 		color: var(--text-secondary) !important;
 	}
 </style>

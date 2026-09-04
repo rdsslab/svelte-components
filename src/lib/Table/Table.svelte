@@ -122,6 +122,7 @@
 	// Crea el Worker
 	//let worker;
 	let idTimeoutDataChanged;
+	let unsubscribeStoreChangedTables;
 
 	$effect(() => {
 		RawDataTable;
@@ -175,7 +176,7 @@
 	onMount(() => {
 		timeRemainingToRefresh = 0;
 
-		if (!requestData || requestData === undefined) {
+		if (!requestData) {
 			requestData = {
 				url: undefined,
 				refresh_time: 4,
@@ -191,7 +192,7 @@
 			? Number(requestData.refresh_time)
 			: 4;
 
-		storeChangedTables.subscribe((value) => {
+		unsubscribeStoreChangedTables = storeChangedTables.subscribe((value) => {
 			//console.log('storeChangedTables.subscribe', value);
 
 			try {
@@ -202,6 +203,19 @@
 				console.error(error);
 			}
 		});
+
+		auto_refresh = setInterval(async () => {
+			//console.log('yyyyyyyyyyyy');
+			if (requestDataExists()) {
+				if (timeRemainingToRefresh == 0 || auto_refresh_by_table_changed_request > 0) {
+					await GetDataTable();
+					timeRemainingToRefresh = IntervalRefresh[requestData.refresh_time];
+					auto_refresh_by_table_changed_request = 0;
+				} else {
+					timeRemainingToRefresh--;
+				}
+			}
+		}, 1000);
 	});
 
 	function ArrayChunk(myArray, chunk_size) {
@@ -309,25 +323,16 @@
 
 	let auto_refresh_by_table_changed_request = 0;
 
-	let auto_refresh = setInterval(async () => {
-		//console.log('yyyyyyyyyyyy');
-		if (requestDataExists()) {
-			if (timeRemainingToRefresh == 0 || auto_refresh_by_table_changed_request > 0) {
-				await GetDataTable();
-				timeRemainingToRefresh = IntervalRefresh[requestData.refresh_time];
-				auto_refresh_by_table_changed_request = 0;
-			} else {
-				timeRemainingToRefresh--;
-			}
-		}
-	}, 1000);
-
+	let auto_refresh;
 	let hash_last_data = '';
 
 	onDestroy(() => {
 		clearInterval(auto_refresh);
 		//clearTimeout(idTimeoutSearch);
 		clearTimeout(idTimeoutDataChanged);
+		if (unsubscribeStoreChangedTables) {
+			unsubscribeStoreChangedTables();
+		}
 	});
 
 	function ChangeIntervalRefresh() {
@@ -405,7 +410,7 @@
 	}
 
 	function HClickHeader(e) {
-		ColumnSort = e.target.dataset.column;
+		ColumnSort = e.currentTarget.dataset.column;
 		orderASC = !orderASC;
 		//console.log("ColumnSort:", ColumnSort, "orderASC:", orderASC);
 		FilterData();
@@ -484,7 +489,7 @@
 				? RawDataTable.findIndex((row) => {
 						return row.internal_hash_row == dataRow.internal_hash_row;
 					})
-				: {};
+				: -1;
 
 		if (onchangecell) {
 			onchangecell(
@@ -501,9 +506,9 @@
 
 		if (ColumnSort) {
 			if (orderASC) {
-				rows = rows.sort(SortColumn(ColumnSort));
+				rows = [...rows].sort(SortColumn(ColumnSort));
 			} else {
-				rows = rows.sort(SortColumn(ColumnSort, 'desc'));
+				rows = [...rows].sort(SortColumn(ColumnSort, 'desc'));
 			}
 		}
 		//console.log(pageSize, pageSizeSelected);
@@ -942,7 +947,7 @@
 							name="rows_per_page"
 							onchange={(e) => {
 								//console.log(e.target.value);
-								pageSizeSelected = e.target.value;
+								pageSizeSelected = parseInt(e.target.value, 10);
 								FilterData();
 							}}
 						>
@@ -980,7 +985,7 @@
 				{#each Object.keys(internal_columns) as item, ith}
 					<!-- Muestra las columnas que no se hayan especificado como ocultas -->
 					{#if internal_columns[item]}
-						{#if !internal_columns[item].hidden || !internal_columns[item].hidden == null}
+						{#if !internal_columns[item].hidden || internal_columns[item].hidden == null}
 							<!-- Mostramos label si es que existe -->
 							<th
 								class="has-text-centered show_cursor_mouse has-text-white"

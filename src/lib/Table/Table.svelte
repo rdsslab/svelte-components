@@ -3,7 +3,9 @@
 	import uFetch from '@rdsslab/uFetch';
 	import { Auto } from './Column/DefaultTypes.js';
 	import { storeChangedTables } from '../class/websocket.js';
-	import Level from '../Level/Level.svelte';
+	import { Notifications } from '../class/utils.js';
+	import TableToolbar from './TableToolbar.svelte';
+	import TablePagination from './TablePagination.svelte';
 	import { ExportTableToHTML, ExportTableToXlsx } from './utils/export_data.js';
 	import { checkIsArray, ProcessDataTable } from './utils/utils.js';
 
@@ -96,9 +98,9 @@
 	} = $props();
 
 	const FetchData = new uFetch();
-	//const dispatch = createEventDispatcher();
+	const notify = new Notifications();
 	let DataTable = $state([]);
-	let SelectedRows = $state([]);
+	let SelectedRows = $state(new Set());
 
 	let text_search = $state(undefined);
 	let loading = $state(false);
@@ -114,14 +116,22 @@
 	let TotalPages = $derived.by(() => {
 		return paginatedData.length;
 	});
+	let visiblePages = $derived.by(() => {
+		const maxVisible = 4;
+		const pages = [];
+		const start = PageSelected + 1;
+		const end = Math.min(start + maxVisible, TotalPages + 1);
+		for (let i = start; i < end; i++) {
+			pages.push(i);
+		}
+		return pages;
+	});
 
-	let SelectAll = $state(false);
 	let orderASC = $state(true);
 	let internal_columns = $state({});
 
-	// Crea el Worker
-	//let worker;
 	let idTimeoutDataChanged;
+	let idTimeoutSearch;
 	let unsubscribeStoreChangedTables;
 
 	$effect(() => {
@@ -134,16 +144,10 @@
 	}
 
 	function onrawDataChanged() {
-		//console.log('>> onrawDataChanged >>', hash_last_data, RawDataTable);
-
 		if (RawDataTableIsArray()) {
-			// Cancela el ultimo timeout
 			clearTimeout(idTimeoutDataChanged);
-			//console.log('xxxxxxxxxx');
 
-			// Setea uno nuevo
 			idTimeoutDataChanged = setTimeout(async () => {
-				//console.log('Se ha guardado los cambios');
 				try {
 					let result_process = await ProcessDataTable({
 						data: RawDataTable,
@@ -153,11 +157,8 @@
 
 					hash_last_data = result_process.hash_last_data;
 
-					//	console.log(result_process);
-
 					if (result_process.different_data) {
 						RawDataTable = result_process.data;
-						//console.log('Hay cambos');
 						SetColumns();
 						FilterData();
 					}
@@ -169,7 +170,6 @@
 	}
 
 	function OnSelection() {
-		//dispatch('selectrows', { rows: GetSelectedRows() });
 		onselectrows({ rows: GetSelectedRows() });
 	}
 
@@ -193,8 +193,6 @@
 			: 4;
 
 		unsubscribeStoreChangedTables = storeChangedTables.subscribe((value) => {
-			//console.log('storeChangedTables.subscribe', value);
-
 			try {
 				if (relatedTablesForAutoRefresh.includes(value.table)) {
 					auto_refresh_by_table_changed_request++;
@@ -205,7 +203,6 @@
 		});
 
 		auto_refresh = setInterval(async () => {
-			//console.log('yyyyyyyyyyyy');
 			if (requestDataExists()) {
 				if (timeRemainingToRefresh == 0 || auto_refresh_by_table_changed_request > 0) {
 					await GetDataTable();
@@ -219,21 +216,16 @@
 	});
 
 	function ArrayChunk(myArray, chunk_size) {
-		//var index = 0;
-		//var arrayLength = myArray.length;
 		let tempArray = [];
 		chunk_size = parseInt(chunk_size);
 
 		if (checkIsArray(myArray)) {
 			for (let index = 0; index < myArray.length; index += chunk_size) {
 				let myChunk = myArray.slice(index, index + chunk_size);
-
-				// Do something if you want with the group
 				tempArray.push(myChunk);
 			}
 		}
 
-		//tempArray[0] = myArray;
 		return tempArray;
 	}
 
@@ -243,9 +235,6 @@
 			internal_columns = {};
 
 			Object.keys(RawDataTable[0]).forEach((item) => {
-				//	console.log('Tabla: ', item);
-
-				//let icolumn = {};
 				if (item === 'internal_hash_row') {
 					internal_columns[item] = {
 						label: item.substring(0, MaxSizeLabel),
@@ -257,66 +246,40 @@
 						internal_columns[item].label = item.substring(0, MaxSizeLabel);
 					}
 				} else {
-					// Tambien limita la longitud del nombre de la columna a 10 caracteres
 					internal_columns[item] = {
 						label: item.substring(0, MaxSizeLabel),
 						hidden: false
 					};
 				}
-				//return icolumn;
 			});
 		}
 	}
 
 	function RowIsSelected(internal_hash_row) {
-		let isSelected = SelectedRows.includes(internal_hash_row);
-		return isSelected;
+		return SelectedRows.has(internal_hash_row);
 	}
 
 	export function GetSelectedRows() {
-		let r = [];
-		if (RawDataTableIsArray()) {
-			r = RawDataTable.filter((row) => {
-				return SelectedRows.includes(row.internal_hash_row);
-			});
-		}
-		return r;
+		if (!RawDataTableIsArray()) return [];
+		return RawDataTable.filter((row) => SelectedRows.has(row.internal_hash_row));
 	}
 
-	function ExportToHTML() {
-		//console.log(this);
+	function handleExport(type) {
 		try {
-			// Filter only selection
-
-			//	console.log('ExportTable > Columns ', columns);
-
 			let filteredData = GetSelectedRows();
 			if (filteredData && filteredData.length > 0) {
-				ExportTableToHTML(filteredData, columns, fileNameExport);
+				if (type === 'xlsx') {
+					ExportTableToXlsx(filteredData, columns, fileNameExport);
+				} else {
+					ExportTableToHTML(filteredData, columns, fileNameExport);
+				}
+				notify.push({ message: `Exported ${filteredData.length} rows to ${type.toUpperCase()}.`, color: 'success', title: 'Export' });
 			} else {
 				selectionType = 2;
-				alert('Select the rows to export.');
+				notify.push({ message: 'Select the rows to export.', color: 'warning', title: 'Export' });
 			}
 		} catch (error) {
-			console.error(error);
-		}
-	}
-
-	function ExportToExcel() {
-		//console.log(this);
-		try {
-			// Filter only selection
-
-			//	console.log('ExportTable > Columns ', columns);
-
-			let filteredData = GetSelectedRows();
-			if (filteredData && filteredData.length > 0) {
-				ExportTableToXlsx(filteredData, columns, fileNameExport);
-			} else {
-				selectionType = 2;
-				alert('Select the rows to export.');
-			}
-		} catch (error) {
+			notify.push({ message: 'Export failed: ' + error.message, color: 'danger', title: 'Export Error' });
 			console.error(error);
 		}
 	}
@@ -328,8 +291,8 @@
 
 	onDestroy(() => {
 		clearInterval(auto_refresh);
-		//clearTimeout(idTimeoutSearch);
 		clearTimeout(idTimeoutDataChanged);
+		clearTimeout(idTimeoutSearch);
 		if (unsubscribeStoreChangedTables) {
 			unsubscribeStoreChangedTables();
 		}
@@ -355,25 +318,21 @@
 			const valA = a[key];
 			const valB = b[key];
 
-			// 1. Handle null/undefined (push to bottom)
 			const aNil = valA === null || valA === undefined;
 			const bNil = valB === null || valB === undefined;
 			if (aNil && bNil) return 0;
 			if (aNil) return order === 'asc' ? 1 : -1;
 			if (bNil) return order === 'asc' ? -1 : 1;
 
-			// 2. Handle Booleans (false < true)
 			if (typeof valA === 'boolean' && typeof valB === 'boolean') {
 				return order === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
 			}
 
-			// 3. Handle Strings
 			if (typeof valA === 'string' && typeof valB === 'string') {
 				const cmp = valA.localeCompare(valB, undefined, { sensitivity: 'base' });
 				return order === 'asc' ? cmp : -cmp;
 			}
 
-			// 4. Default comparison (Numbers, etc)
 			if (valA > valB) return order === 'asc' ? 1 : -1;
 			if (valA < valB) return order === 'asc' ? -1 : 1;
 			return 0;
@@ -382,11 +341,9 @@
 
 	function ownDeleteRows(selected_rows) {
 		if (selected_rows.rows && selected_rows.rows.length > 0) {
-			//console.log('Hay filas por eliminar', selected_rows);
 			RawDataTable = RawDataTable
 				? RawDataTable.filter((item) => {
 						let r = selected_rows.rows.find((r) => {
-							//console.log(r, item);
 							return r.internal_hash_row == item.internal_hash_row;
 						});
 						return !r;
@@ -401,10 +358,11 @@
 			if (filteredData && filteredData.length > 0) {
 				ondeleterow({ rows: $state.snapshot(filteredData) });
 			} else {
-				alert('Select the rows to delete.');
 				selectionType = 2;
+				notify.push({ message: 'Select the rows to delete.', color: 'warning', title: 'Delete' });
 			}
 		} catch (error) {
+			notify.push({ message: 'Delete failed: ' + error.message, color: 'danger', title: 'Delete Error' });
 			console.error(error);
 		}
 	}
@@ -412,7 +370,6 @@
 	function HClickHeader(e) {
 		ColumnSort = e.currentTarget.dataset.column;
 		orderASC = !orderASC;
-		//console.log("ColumnSort:", ColumnSort, "orderASC:", orderASC);
 		FilterData();
 	}
 
@@ -421,31 +378,37 @@
 			onsearch();
 		}
 
-		if (text_search && text_search.length > 0) {
-			FilterData();
-		} else {
-			FilterData();
+		FilterData();
+		if (!text_search || text_search.length === 0) {
 			timeRemainingToRefresh = 0;
 		}
 	}
 
+	function handleSearchInput() {
+		clearTimeout(idTimeoutSearch);
+		idTimeoutSearch = setTimeout(() => {
+			if (onsearch) {
+				onsearch();
+			}
+			FilterData();
+			if (!text_search || text_search.length === 0) {
+				timeRemainingToRefresh = 0;
+			}
+		}, 300);
+	}
+
 	function handleChangeSelectAll(e) {
-		SelectAll = e.target.checked;
-
-		if (SelectAll) {
-			SelectedRows = [];
-
-			paginatedData.forEach((pag) => {
-				SelectedRows = SelectedRows.concat(
-					pag.map((item) => {
-						return item.internal_hash_row;
-					})
-				);
-			});
+		if (e.target.checked) {
+			if (RawDataTableIsArray()) {
+				const newSet = new Set(SelectedRows);
+				for (let i = 0, len = RawDataTable.length; i < len; i++) {
+					newSet.add(RawDataTable[i].internal_hash_row);
+				}
+				SelectedRows = newSet;
+			}
 		} else {
-			SelectedRows = [];
+			SelectedRows = new Set();
 		}
-		//console.log(SelectedRows);
 		FilterData();
 	}
 
@@ -454,7 +417,6 @@
 	}
 
 	function FilterData() {
-		//console.log("Filtrar", text_search);
 		let TempData;
 		if (text_search && text_search.length > 0 && RawDataTableIsArray()) {
 			TempData = RawDataTable.filter((d) => {
@@ -471,8 +433,6 @@
 					return false;
 				}
 			});
-			//console.log('>>>> TempData >>>', text_search, TempData);
-			//TempData = RawDataTable;
 		} else {
 			TempData = RawDataTable;
 		}
@@ -502,8 +462,6 @@
 	}
 
 	function Pagination(rows) {
-		// console.log('Pagination 1 >>>>>>>> ', rows);
-
 		if (ColumnSort) {
 			if (orderASC) {
 				rows = [...rows].sort(SortColumn(ColumnSort));
@@ -511,13 +469,9 @@
 				rows = [...rows].sort(SortColumn(ColumnSort, 'desc'));
 			}
 		}
-		//console.log(pageSize, pageSizeSelected);
-		//console.log('Pagination 2 >>>>>>>> ', rows);
+
 		paginatedData = ArrayChunk(rows, pageSize[pageSizeSelected]);
 
-		//console.log(paginatedData.length);
-
-		//TotalPages = paginatedData.length;
 		if (PageSelected > TotalPages) {
 			PageSelected = 1;
 		}
@@ -529,37 +483,32 @@
 
 		if (tmpdata) {
 			DataTable = tmpdata.filter((ev) => {
-				// Se puso este filtro para evitar errores cuando hay registros nulos o no tengan internal_hash_row
 				return ev && ev.internal_hash_row;
 			});
-			//console.log(tmpdata, DataTable);
 		}
 	}
 
 	function HandleOnClickEdit() {
-		//console.log(showEdit);
 		showEditRow = !showEditRow;
 		return false;
 	}
 
 	function HandleOnRowSelected(event) {
 		if (selectionType == 1) {
-			SelectedRows = [];
+			SelectedRows = new Set();
 		}
 
 		let internal_hash_row = event.target.dataset.internal_hash_row;
 		if (event.target.checked) {
-			SelectedRows.push(internal_hash_row);
+			SelectedRows.add(internal_hash_row);
 		} else {
-			SelectedRows = SelectedRows.filter((value) => {
-				return value !== internal_hash_row;
-			});
+			SelectedRows.delete(internal_hash_row);
 		}
+		SelectedRows = SelectedRows;
 		OnSelection();
 	}
 
 	async function GetDataTable() {
-		//console.log('GetDataTable');
 		if (loading) {
 			console.log('There is a petition in progress...');
 		} else {
@@ -581,35 +530,28 @@
 					let method_request =
 						requestData && requestData.method ? requestData.method.toLowerCase() : 'get';
 
-					//		console.log(method_request);
-
 					let res = await FetchData[method_request]({
 						url: requestData.url,
 						data: requestData.params,
 						headers: requestData.headers
 					});
-					// console.log('TABLE FetchData: ', res);
+
 					if (res && res.status == 200) {
 						let data = await res.json();
 
 						if (checkIsArray(data)) {
 							RawDataTable = data;
-							//	console.log('GetDataTable -> RawDataTable: > ', RawDataTable);
-
 							LastFetchResponse = true;
 						} else {
-							// console.warn(data);
 							RawDataTable = [];
 							LastFetchResponse = false;
 						}
 					} else {
-						// console.error(res);
 						LastFetchResponse = false;
 					}
-					//ProcessRawData();
 					loading = false;
 				} catch (error) {
-					console.error(error);
+					notify.push({ message: 'Fetch error: ' + error.message, color: 'danger', title: 'Data Error' });
 					loading = false;
 					LastFetchResponse = false;
 				}
@@ -619,513 +561,233 @@
 			}
 		}
 	}
+
+	// --- Toolbar event handlers ---
+	function handleToolbarRefresh() {
+		ChangeIntervalRefresh();
+	}
+
+	function handleToolbarSearch() {
+		handleClickSearch();
+	}
+
+	function handleToolbarSearchInput() {
+		handleSearchInput();
+	}
+
+	function handleToolbarExport(type) {
+		handleExport(type);
+	}
+
+	function handleToolbarDelete() {
+		HClickDelete();
+	}
+
+	function handleToolbarEdit() {
+		HandleOnClickEdit();
+	}
+
+	function handleToolbarNew() {
+		if (onnewrow) {
+			onnewrow();
+		}
+	}
+
+	function handleToolbarSelectionTypeChange(type) {
+		selectionType = type;
+	}
+
+	// --- Pagination event handlers ---
+	function handlePageChange(page) {
+		PageSelected = page;
+		SelectPage();
+	}
+
+	function handlePageSizeChange(index) {
+		pageSizeSelected = index;
+		FilterData();
+	}
 </script>
 
-{#snippet t_refresh()}
-	{#if requestData && requestData.url}
-		<button class="button is-small" onclick={ChangeIntervalRefresh} title="Refresh time">
-			{#if loading}
-				<span class="icon has-text-info"><i class="fas fa-spinner fa-pulse"></i></span>
-			{:else if LastFetchResponse}
-				<span class="icon"><i class="fas fa-hourglass-half"></i></span>
-			{:else}
-				<span class="icon has-text-danger"><i class="fas fa-exclamation-triangle"></i></span>
-			{/if}
-			<span>{timeRemainingToRefresh}s</span>
-		</button>
-	{/if}
-{/snippet}
+<TableToolbar
+	{requestData}
+	{loading}
+	{LastFetchResponse}
+	{timeRemainingToRefresh}
+	{showExportButton}
+	{showDeleteButton}
+	{showEditButton}
+	{showNewButton}
+	{showSelectionButton}
+	bind:selectionType
+	{iconExport}
+	{iconDeleteRow}
+	bind:text_search
+	{left_items}
+	{right_items}
+	onRefresh={handleToolbarRefresh}
+	onSearch={handleToolbarSearch}
+	onSearchInput={handleToolbarSearchInput}
+	onExport={handleToolbarExport}
+	onDelete={handleToolbarDelete}
+	onEdit={handleToolbarEdit}
+	onNew={handleToolbarNew}
+	onSelectionTypeChange={handleToolbarSelectionTypeChange}
+/>
 
-{#snippet t_search()}
-	<div class="field has-addons">
-		<p class="control">
-			<input
-				class="input size_search is-small"
-				type="text"
-				placeholder="Search"
-				bind:value={text_search}
-				onchange={handleClickSearch}
-			/>
-		</p>
-		<p class="control">
-			<button aria-label="close" class="button is-small" title="Search" onclick={handleClickSearch}>
-				<span class="icon is-small">
-					<i class="fas fa-search"></i>
-				</span>
-			</button>
-		</p>
-	</div>
-{/snippet}
-
-{#snippet t_export_excel()}
-	{#if showExportButton}
-		<button
-			aria-label="close"
-			class="button is-small"
-			onclick={ExportToExcel}
-			title="Export to Excel"
-		>
-			<span class="icon">
-				<i class={iconExport}></i>
-			</span>
-		</button>
-	{/if}
-{/snippet}
-
-{#snippet t_export_html()}
-	{#if showExportButton}
-		<button
-			aria-label="close"
-			class="button is-small"
-			onclick={ExportToHTML}
-			title="Export to Html"
-		>
-			<span class="icon">
-				<i class="fa-solid fa-download"></i>
-			</span>
-		</button>
-	{/if}
-{/snippet}
-
-{#snippet t_selection_type()}
-	{#if showSelectionButton}
-		<div class="dropdown is-hoverable is-right" title="Selection type">
-			<div class="dropdown-trigger">
-				<button
-					aria-label="close"
-					class="button is-small"
-					aria-haspopup="true"
-					aria-controls="dropdown-menu"
-				>
-					<span class="icon">
-						<i class="far fa-list-alt"></i>
-					</span>
-				</button>
-			</div>
-			<div class="dropdown-menu" role="menu">
-				<div class="dropdown-content">
-					<!-- svelte-ignore a11y_missing_attribute -->
-					<a class="dropdown-item is-size-7">
-						<input
-							class="check_margin"
-							type="radio"
-							name="selection_type"
-							value="1"
-							checked={selectionType == 1 ? true : false}
-							onchange={() => {
-								selectionType = 1;
-							}}
-						/>
-						<span class="icon">
-							<i class="fas fa-check"></i>
-						</span>
-						<span>Simple</span>
-					</a>
-
-					<!-- svelte-ignore a11y_missing_attribute -->
-					<a class="dropdown-item is-size-7">
-						<input
-							class="check_margin"
-							type="radio"
-							name="selection_type"
-							value="2"
-							checked={selectionType == 2 ? true : false}
-							onchange={() => {
-								selectionType = 2;
-							}}
-						/>
-						<span class="icon">
-							<i class="fas fa-check-double"></i>
-						</span>
-						<span>Multiple</span>
-					</a>
-					<hr class="dropdown-divider" />
-
-					<!-- svelte-ignore a11y_missing_attribute -->
-					<a class="dropdown-item is-size-7">
-						<input
-							class="check_margin"
-							type="radio"
-							name="selection_type"
-							value="0"
-							checked={selectionType == 0 ? true : false}
-							onchange={() => {
-								selectionType = 0;
-							}}
-						/>
-
-						<span class="icon">
-							<i class="fas fa-ban"></i>
-						</span>
-						<span>None</span>
-					</a>
-				</div>
-			</div>
+<div class="table-container is-size-7">
+	{#if loading}
+		<div class="table_loading_bar">
+			<span class="icon has-text-info"><i class="fas fa-spinner fa-pulse"></i></span>
+			<span class="table_loading_text">Loading data...</span>
 		</div>
 	{/if}
-{/snippet}
-
-{#snippet t_delete()}
-	{#if showDeleteButton}
-		<button aria-label="close" class="button is-small" title="Delete row" onclick={HClickDelete}>
-			<span class="icon">
-				<i class={iconDeleteRow}></i>
-			</span>
-		</button>
-	{/if}
-{/snippet}
-
-{#snippet t_edit()}
-	{#if showEditButton}
-		<button aria-label="close" class="button is-small" title="Edit row" onclick={HandleOnClickEdit}>
-			<span class="icon">
-				<i class="far fa-edit"></i>
-			</span>
-		</button>
-	{/if}
-{/snippet}
-
-{#snippet t_new()}
-	{#if showNewButton}
-		<button
-			aria-label="close"
-			class="button is-small"
-			title="New row"
-			onclick={() => {
-				if (onnewrow) {
-					onnewrow();
-				}
-			}}
-		>
-			<span class="icon">
-				<i class="far fa-file"></i>
-			</span>
-		</button>
-	{/if}
-{/snippet}
-
-<Level
-	left={left_items}
-	right={[
-		...right_items,
-		t_refresh,
-		t_new,
-		t_edit,
-		t_delete,
-		t_selection_type,
-		t_export_excel,
-		t_export_html,
-		t_search
-	]}
-></Level>
-
-{#snippet pagination()}
-	<div class="table_pagination">
-		<!-- Main container -->
-		<nav class="level">
-			<!-- Left side -->
-			<div class="level-left">
-				{#if paginatedData && paginatedData.length > 1}
-					<div class="level-item">
-						<span class="">
-							Page {PageSelected} of {TotalPages} (Total {totalFilteredRows}
-							rows)
-						</span>
-					</div>
-					<div class="level-item">
-						<div class="buttons has-addons">
-							<button
-								aria-label="close"
-								class="button is-small"
-								onclick={() => {
-									PageSelected = 1;
-									SelectPage();
-								}}
-							>
-								<span class="icon">
-									<i class="fas fa-angle-double-left"></i>
-								</span>
-							</button>
-							<button
-								aria-label="close"
-								class="button is-small"
-								onclick={() => {
-									if (PageSelected > 1) {
-										PageSelected = PageSelected - 1;
-									}
-									SelectPage();
-								}}
-							>
-								<span class="icon">
-									<i class="fas fa-angle-left"></i>
-								</span>
-							</button>
-							<button
-								class="button is-small is-info"
-								onclick={() => {
-									//PageSelected = 1;
-									SelectPage();
-								}}>{PageSelected}</button
-							>
-							{#if PageSelected + 1 <= TotalPages}
-								<button
-									class="button is-small"
-									onclick={() => {
-										PageSelected = PageSelected + 1;
-										SelectPage();
-									}}>{PageSelected + 1}</button
-								>
-							{/if}
-							{#if PageSelected + 2 <= TotalPages}
-								<button
-									class="button is-small"
-									onclick={() => {
-										PageSelected = PageSelected + 2;
-										SelectPage();
-									}}>{PageSelected + 2}</button
-								>
-							{/if}
-
-							{#if PageSelected + 3 <= TotalPages}
-								<button
-									class="button is-small"
-									onclick={() => {
-										PageSelected = PageSelected + 3;
-										SelectPage();
-									}}>{PageSelected + 3}</button
-								>
-							{/if}
-
-							{#if PageSelected + 4 <= TotalPages}
-								<button
-									class="button is-small"
-									onclick={() => {
-										PageSelected = PageSelected + 4;
-										SelectPage();
-									}}>{PageSelected + 4}</button
-								>
-							{/if}
-
-							<button
-								aria-label="close"
-								class="button is-small"
-								onclick={() => {
-									if (PageSelected < TotalPages) {
-										PageSelected = PageSelected + 1;
-										SelectPage();
-									}
-								}}
-							>
-								<span class="icon">
-									<i class="fas fa-angle-right"></i>
-								</span>
-							</button>
-
-							<button
-								aria-label="close"
-								class="button is-small"
-								onclick={() => {
-									PageSelected = TotalPages;
-									SelectPage();
-								}}
-							>
-								<span class="icon">
-									<i class="fas fa-angle-double-right"></i>
-								</span>
-							</button>
-						</div>
-					</div>
-				{/if}
-			</div>
-
-			<!-- Right side -->
-			<div class="level-right">
-				<span class="level-item">
-					<span class="label_rows_per_page">Rows per page</span>
-					<div class="select is-small">
-						<select
-							name="rows_per_page"
-							onchange={(e) => {
-								//console.log(e.target.value);
-								pageSizeSelected = parseInt(e.target.value, 10);
-								FilterData();
-							}}
-						>
-							{#each pageSize as item, itd}
-								<option value={itd} selected={item == pageSize[pageSizeSelected]}>{item}</option>
-							{/each}
-						</select>
-					</div>
-				</span>
-			</div>
-		</nav>
-	</div>
-{/snippet}
-
-{#snippet table_header()}
-	<!-- Aqui escribe el encabezado de la tabla -->
-	<thead>
-		<tr class="has-background-link-dark">
-			<th class="has-text-centered has-text-white resizable">#</th>
-			{#if selectionType == 1}
-				<th class="has-text-centered has-text-white"><span>-</span></th>
-			{:else if selectionType == 2}
-				<th class="has-text-centered has-text-white">
-					<input type="checkbox" onclick={handleChangeSelectAll} />
-				</th>
-			{/if}
-
-			{#if showEditRow}
-				<th class="has-text-centered has-text-white">
-					<i class="fas fa-pen"></i>
-				</th>
-			{/if}
-
-			{#if internal_columns}
-				{#each Object.keys(internal_columns) as item, ith}
-					<!-- Muestra las columnas que no se hayan especificado como ocultas -->
-					{#if internal_columns[item]}
-						{#if !internal_columns[item].hidden || internal_columns[item].hidden == null}
-							<!-- Mostramos label si es que existe -->
-							<th
-								class="has-text-centered show_cursor_mouse has-text-white"
-								data-column={item}
-								onclick={HClickHeader}
-							>
-								{internal_columns[item].label}
-								{#if ColumnSort == item}
-									{#if orderASC}
-										<i class="fas fa-caret-down"></i>
-									{:else}
-										<i class="fas fa-caret-up"></i>
-									{/if}
-								{/if}
-							</th>
-						{/if}
-					{/if}
-				{/each}
-			{/if}
-		</tr>
-	</thead>
-{/snippet}
-
-{#snippet table_body()}
-	<tbody>
-		{#if DataTable}
-			{#each DataTable as dataRow, i (dataRow.internal_hash_row)}
-				<tr
-					class={rowClassFunction(dataRow)}
-					onclick={() => {
-						if (onclickrow) {
-							onclickrow({ row: $state.snapshot(dataRow), id: $state.snapshot(i) });
-						}
-					}}
-				>
-					<!-- Muestra número de fila -->
-					<td>{i + 1 + pageSize[pageSizeSelected] * (PageSelected - 1)}</td>
-
+	<table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+		{#if DataTable && DataTable.length > 0}
+			<!-- Table Header -->
+			<thead>
+				<tr class="has-background-link-dark">
+					<th class="has-text-centered has-text-white resizable">#</th>
 					{#if selectionType == 1}
-						<!-- Columna selección unica -->
-						<td class="has-text-centered"
-							><input
-								type="radio"
-								name="single_select"
-								class="show_cursor_mouse"
-								checked={RowIsSelected(dataRow.internal_hash_row)}
-								data-internal_hash_row={dataRow.internal_hash_row}
-								onclick={HandleOnRowSelected}
-							/></td
-						>
+						<th class="has-text-centered has-text-white"><span>-</span></th>
 					{:else if selectionType == 2}
-						<!-- Columna selección multiple -->
-						<td class="has-text-centered">
-							<input
-								class="show_cursor_mouse"
-								type="checkbox"
-								checked={RowIsSelected(dataRow.internal_hash_row)}
-								data-internal_hash_row={dataRow.internal_hash_row}
-								onclick={HandleOnRowSelected}
-							/>
-						</td>
+						<th class="has-text-centered has-text-white">
+							<input type="checkbox" onclick={handleChangeSelectAll} />
+						</th>
 					{/if}
 
 					{#if showEditRow}
-						<!-- Columna que muestra icono de editar -->
-						<td
-							class="has-text-centered show_cursor_mouse"
-							onclick={() => {
-								if (oneditrow) {
-									oneditrow($state.snapshot(DataTable[i]));
-								}
-							}}
-						>
-							<span class="icon is-small">
-								<i class="fas fa-pen"></i>
-							</span>
-						</td>
+						<th class="has-text-centered has-text-white">
+							<i class="fas fa-pen"></i>
+						</th>
 					{/if}
 
-					{#each Object.keys(internal_columns) as item}
-						<!-- Muestra las columnas que no se hayan especificado como ocultas -->
-						{#if internal_columns[item]}
-							{#if !internal_columns[item].hidden || internal_columns[item].hidden == null}
-								{#if internal_columns[item].decorator && internal_columns[item].decorator.component}
-									{@const Component = internal_columns[item].decorator.component}
-									<Component
-										{...internal_columns[item]?.decorator?.props}
-										bind:row={DataTable[i]}
-										bind:value={dataRow[item]}
-										onchangecell={(e) => {
-											eventOnChangeCell(item, dataRow);
-										}}
-										onclickcell={(e) => {
-											if (onclickcell) {
-												onclickcell(
-													$state.snapshot({
-														field: item,
-														data: dataRow
-													})
-												);
-											}
-										}}
-									/>
-								{:else}
-									<Auto
-										{...internal_columns[item]?.decorator?.props}
-										bind:row={DataTable[i]}
-										bind:value={dataRow[item]}
-										onchangecell={(e) => {
-											//	console.log('Auto', item, dataRow[item]);
-											eventOnChangeCell(item, dataRow);
-										}}
-										onclickcell={(e) => {
-											// TODO: No está funcionando
-											//	console.log('Auto clic');
-											if (onclickcell) {
-												onclickcell(
-													$state.snapshot({
-														field: item,
-														data: dataRow
-													})
-												);
-											}
-										}}
-									></Auto>
+					{#if internal_columns}
+						{#each Object.keys(internal_columns) as item, ith}
+							{#if internal_columns[item]}
+								{#if !internal_columns[item].hidden || internal_columns[item].hidden == null}
+									<th
+										class="has-text-centered show_cursor_mouse has-text-white"
+										data-column={item}
+										onclick={HClickHeader}
+									>
+										{internal_columns[item].label}
+										{#if ColumnSort == item}
+											{#if orderASC}
+												<i class="fas fa-caret-down"></i>
+											{:else}
+												<i class="fas fa-caret-up"></i>
+											{/if}
+										{/if}
+									</th>
 								{/if}
 							{/if}
-						{/if}
-					{/each}
+						{/each}
+					{/if}
 				</tr>
-			{/each}
-		{/if}
-	</tbody>
-{/snippet}
+			</thead>
 
-<div class="table-container is-size-7">
-	<table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
-		{#if DataTable && DataTable.length > 0}
-			{@render table_header()}
-			{@render table_body()}
+			<!-- Table Body -->
+			<tbody>
+				{#each DataTable as dataRow, i (dataRow.internal_hash_row)}
+					<tr
+						class={rowClassFunction(dataRow)}
+						onclick={() => {
+							if (onclickrow) {
+								onclickrow({ row: $state.snapshot(dataRow), id: $state.snapshot(i) });
+							}
+						}}
+					>
+						<td>{i + 1 + pageSize[pageSizeSelected] * (PageSelected - 1)}</td>
+
+						{#if selectionType == 1}
+							<td class="has-text-centered"
+								><input
+									type="radio"
+									name="single_select"
+									class="show_cursor_mouse"
+									checked={RowIsSelected(dataRow.internal_hash_row)}
+									data-internal_hash_row={dataRow.internal_hash_row}
+									onclick={HandleOnRowSelected}
+								/></td
+							>
+						{:else if selectionType == 2}
+							<td class="has-text-centered">
+								<input
+									class="show_cursor_mouse"
+									type="checkbox"
+									checked={RowIsSelected(dataRow.internal_hash_row)}
+									data-internal_hash_row={dataRow.internal_hash_row}
+									onclick={HandleOnRowSelected}
+								/>
+							</td>
+						{/if}
+
+						{#if showEditRow}
+							<td
+								class="has-text-centered show_cursor_mouse"
+								onclick={() => {
+									if (oneditrow) {
+										oneditrow($state.snapshot(DataTable[i]));
+									}
+								}}
+							>
+								<span class="icon is-small">
+									<i class="fas fa-pen"></i>
+								</span>
+							</td>
+						{/if}
+
+						{#each Object.keys(internal_columns) as item}
+							{#if internal_columns[item]}
+								{#if !internal_columns[item].hidden || internal_columns[item].hidden == null}
+									{#if internal_columns[item].decorator && internal_columns[item].decorator.component}
+										{@const Component = internal_columns[item].decorator.component}
+										<Component
+											{...internal_columns[item]?.decorator?.props}
+											bind:row={DataTable[i]}
+											bind:value={dataRow[item]}
+											onchangecell={(e) => {
+												eventOnChangeCell(item, dataRow);
+											}}
+											onclickcell={(e) => {
+												if (onclickcell) {
+													onclickcell(
+														$state.snapshot({
+															field: item,
+															data: dataRow
+														})
+													);
+												}
+											}}
+										/>
+									{:else}
+										<Auto
+											{...internal_columns[item]?.decorator?.props}
+											bind:row={DataTable[i]}
+											bind:value={dataRow[item]}
+											onchangecell={(e) => {
+												eventOnChangeCell(item, dataRow);
+											}}
+											onclickcell={(e) => {
+												// TODO: No está funcionando
+												if (onclickcell) {
+													onclickcell(
+														$state.snapshot({
+															field: item,
+															data: dataRow
+														})
+													);
+												}
+											}}
+										></Auto>
+									{/if}
+								{/if}
+							{/if}
+						{/each}
+					</tr>
+				{/each}
+			</tbody>
 		{/if}
 	</table>
 
@@ -1136,7 +798,16 @@
 		</div>
 	{/if}
 
-	{@render pagination()}
+	<TablePagination
+		pageSelected={PageSelected}
+		{totalPages}
+		{totalFilteredRows}
+		{pageSize}
+		{pageSizeSelected}
+		{visiblePages}
+		onPageChange={handlePageChange}
+		onPageSizeChange={handlePageSizeChange}
+	/>
 </div>
 
 <div class="modal" class:is-active={ShowDialogColumn}>
@@ -1185,28 +856,25 @@
 </div>
 
 <style>
-	.size_search {
-		width: 7em;
-	}
 	.show_cursor_mouse {
 		cursor: pointer;
 	}
 
-	.table_pagination {
-		width: 98%;
-		margin: auto;
-	}
-	.label_rows_per_page {
-		margin-right: 1em;
-	}
 	.margin_title {
 		margin-left: 0.5em;
 	}
 
-	.check_margin {
-		margin-left: 10px;
+	.table_loading_bar {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+		padding: 0.4em 0.8em;
+		background-color: #e8f0fe;
+		border-bottom: 1px solid #c0c0c0;
+		font-size: 0.85em;
+		color: #1F4E79;
 	}
-	.slot_padding {
-		margin: 0.1em !important;
+	.table_loading_text {
+		font-weight: 500;
 	}
 </style>

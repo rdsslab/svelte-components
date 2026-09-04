@@ -135,6 +135,9 @@
 	let response_as = $state('json');
 	let active_tab = $state(0);
 	let data_result = $state({ data: '', sizeKBResponse: -1 });
+	let request_headers = $state([]);
+	let response_headers = $state([]);
+	let show_headers = $state(false);
 	let running = $state(false);
 	let elapsed_ms = $state(0);
 	let uF; // current uFetch instance, kept accessible so it can be aborted
@@ -178,6 +181,12 @@
 		}
 		return class_icon;
 	});
+
+	let icon_headers_button = $derived.by(() =>
+		show_headers ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'
+	);
+
+	let label_headers_button = $derived.by(() => (show_headers ? 'Headers' : 'Headers'));
 
 	function classifyContent(contentType) {
 		const type = contentType ? contentType.toLowerCase() : '';
@@ -271,8 +280,7 @@
 
 	// Función para descargar un archivo (blob o texto) automáticamente
 	function downloadFile(content, filename = 'result', type = 'text/plain') {
-		const blob =
-			content instanceof Blob ? content : new Blob([content], { type: type });
+		const blob = content instanceof Blob ? content : new Blob([content], { type: type });
 
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -294,6 +302,8 @@
 		last_response = {};
 		data_result = { data: '', contentType: '', sizeKBResponse: -1, fileExtension: '' };
 		time_responde = undefined;
+		request_headers = [];
+		response_headers = [];
 	}
 
 	/**
@@ -428,6 +438,62 @@
 		}
 
 		return result;
+	}
+
+	function isSpecialBody(body) {
+		// Referencias seguras para entornos donde el global podría no existir (SSR/Node)
+		if (typeof FormData !== 'undefined' && body instanceof FormData) return true;
+		if (typeof Blob !== 'undefined' && body instanceof Blob) return true;
+		if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) return true;
+		if (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) return true;
+		if (typeof ArrayBuffer !== 'undefined' && body instanceof ArrayBuffer) return true;
+		return false;
+	}
+
+	function toBase64(input) {
+		if (typeof btoa === 'function') return btoa(input);
+		if (typeof Buffer !== 'undefined') return Buffer.from(input).toString('base64');
+		return input;
+	}
+
+	function buildRequestHeaders(headers_table, body = undefined) {
+		const headers = {};
+
+		// Headers configurados por el usuario (solo habilitados y con key)
+		const configured = getDataHeaders(headers_table);
+		for (const key in configured) {
+			if (configured[key] !== undefined) headers[key] = configured[key];
+		}
+
+		// Autorización derivada (misma lógica que uFetch) para reflejar lo realmente enviado.
+		if (
+			data.auth &&
+			data.auth.selection == 1 &&
+			data.auth.basic.username &&
+			data.auth.basic.password
+		) {
+			const credentials = `${data.auth.basic.username}:${data.auth.basic.password}`;
+			headers.Authorization = `Basic ${toBase64(credentials)}`;
+		}
+
+		if (data.auth && data.auth.selection == 2 && data.auth.bearer.token) {
+			headers.Authorization = `Bearer ${data.auth.bearer.token}`;
+		}
+
+		// El mismo Content-Type que uFetch agrega automáticamente para cuerpos no-string
+		if (
+			!headers['Content-Type'] &&
+			body != null &&
+			typeof body !== 'string' &&
+			!isSpecialBody(body)
+		) {
+			headers['Content-Type'] = 'application/json';
+		}
+
+		// uFetch elimina Content-Length de los headers
+		delete headers['Content-Length'];
+
+		return Object.entries(headers).map(([key, value]) => ({ key, value }));
 	}
 
 	function getDataQuery(data_table) {
@@ -647,6 +713,20 @@
 
 		<div class="control">
 			<button
+				class="button is-small"
+				onclick={() => {
+					show_headers = !show_headers;
+				}}
+			>
+				<span class="icon">
+					<i class={icon_headers_button}></i>
+				</span>
+				<span>{label_headers_button}</span>
+			</button>
+		</div>
+
+		<div class="control">
+			<button
 				class="button is-small {data_result.sizeKBResponse > 0 ? 'is-success' : ''}"
 				onclick={() => {
 					const ctype = classifyContent(data_result.contentType);
@@ -669,6 +749,44 @@
 			</button>
 		</div>
 	</div>
+
+	{#if show_headers}
+		{#snippet title_request_headers()}
+			<h6 class="title is-6">Request Headers</h6>
+		{/snippet}
+
+		{#snippet title_response_headers()}
+			<h6 class="title is-6">Response Headers</h6>
+		{/snippet}
+
+		<div class="columns">
+			<div class="column">
+				<Table
+					bind:RawDataTable={request_headers}
+					showExportButton={false}
+					showSelectionButton={false}
+					showNewButton={false}
+					showEditButton={false}
+					showDeleteButton={false}
+					showEditRow={false}
+					left_items={[title_request_headers]}
+				></Table>
+			</div>
+			<div class="column">
+				<Table
+					bind:RawDataTable={response_headers}
+					showExportButton={false}
+					showSelectionButton={false}
+					showNewButton={false}
+					showEditButton={false}
+					showDeleteButton={false}
+					showEditRow={false}
+					left_items={[title_response_headers]}
+				></Table>
+			</div>
+		</div>
+	{/if}
+
 	<div>
 		{#if Number(data_result.sizeKBResponse) < Number(limitSizeResponseView)}
 			{#if last_response && !last_response.ok && data_result.data}
@@ -770,6 +888,7 @@
 								{
 									running = true;
 									let data_send = undefined;
+									let startTime;
 
 									// Instantiate uFetch here to prevent Auth header leakage between requests
 									uF = new uFetch();
@@ -785,8 +904,8 @@
 												const sp = new URLSearchParams(queryParams);
 												const queryString = sp.toString();
 												if (queryString) {
-													const hashIndex = final_url.indexOf("#");
-													let hash = "";
+													const hashIndex = final_url.indexOf('#');
+													let hash = '';
 													let urlWithoutHash = final_url;
 
 													if (hashIndex !== -1) {
@@ -794,7 +913,7 @@
 														urlWithoutHash = final_url.substring(0, hashIndex);
 													}
 
-													const separator = urlWithoutHash.includes("?") ? "&" : "?";
+													const separator = urlWithoutHash.includes('?') ? '&' : '?';
 													final_url = urlWithoutHash + separator + queryString + hash;
 												}
 											}
@@ -822,7 +941,7 @@
 
 											resetResponse();
 											// Capturamos el tiempo inicial
-											let startTime = Date.now();
+											startTime = Date.now();
 											elapsed_ms = 0;
 											clearInterval(timerInterval);
 											timerInterval = setInterval(() => {
@@ -846,11 +965,16 @@
 											}
 
 											let req_method = method ? String(method).toLowerCase() : 'get';
+											request_headers = buildRequestHeaders(data.headers, data_send);
 											last_response = await uF[req_method]({
 												url: final_url,
 												data: data_send,
 												headers: getDataHeaders(data.headers)
 											});
+
+											response_headers = Array.from(last_response.headers.entries()).map(
+												([key, value]) => ({ key, value })
+											);
 
 											// Capturamos el tiempo final
 											let endTime = Date.now();
@@ -919,7 +1043,7 @@
 											running = false;
 											clearInterval(timerInterval);
 											time_responde = Date.now() - startTime;
-											//console.error(error);
+											console.trace(error);
 											data_result.error =
 												error?.name === 'AbortError'
 													? 'Request cancelled by user.'
@@ -937,7 +1061,7 @@
 						>
 							<span class="icon is-small">
 								{#if running}
-									<i class="fa-solid fa-stop"></i>
+									<i class="fa-solid fa-cog fa-spin"></i>
 								{:else}
 									<i class="fa-solid fa-play"></i>
 								{/if}

@@ -113,14 +113,14 @@
 	let PageSelected = $state(1);
 	let totalFilteredRows = $state(0);
 	let paginatedData = $state([]);
-	let TotalPages = $derived.by(() => {
+	let totalPages = $derived.by(() => {
 		return paginatedData.length;
 	});
 	let visiblePages = $derived.by(() => {
 		const maxVisible = 4;
 		const pages = [];
 		const start = PageSelected + 1;
-		const end = Math.min(start + maxVisible, TotalPages + 1);
+		const end = Math.min(start + maxVisible, totalPages + 1);
 		for (let i = start; i < end; i++) {
 			pages.push(i);
 		}
@@ -472,7 +472,7 @@
 
 		paginatedData = ArrayChunk(rows, pageSize[pageSizeSelected]);
 
-		if (PageSelected > TotalPages) {
+		if (PageSelected > totalPages) {
 			PageSelected = 1;
 		}
 		SelectPage();

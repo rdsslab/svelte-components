@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { DateTime } from 'luxon';
 // Rename import to avoid confusion with luxon DateTime
 import { DateTime as DateTimeComponent } from '../Column/DefaultTypes.js';
@@ -13,74 +13,112 @@ function FileName(fileNameExport, extension = 'txt') {
     return `${fName}_${DateTime.local().toFormat('yyyy-MM-dd_HH-mm-ss')}.${extension}`;
 }
 
+/**
+ * Builds the HTML content string for the exported table.
+ * @param {Array<Object>} data - Formatted data rows.
+ * @returns {string} Full HTML document string.
+ */
 function ConvertDataToHtml(data) {
-    let tableHTML = '<table id="ted_001">';
+    let tableHTML = '';
 
     // Add table headers
-    tableHTML += '<thead>';
-    tableHTML += '<tr>';
+    tableHTML += '<thead><tr>';
     if (data.length > 0) {
         Object.keys(data[0]).forEach((key) => {
-            tableHTML += '<th>' + key + '</th>';
+            tableHTML += '<th>' + escapeHtml(key) + '</th>';
         });
     }
-    tableHTML += '</tr>';
-    tableHTML += '</thead>';
+    tableHTML += '</tr></thead>';
 
     // Add table data
     tableHTML += '<tbody>';
-    data.forEach((row) => {
+    data.forEach((row, rowIndex) => {
         tableHTML += '<tr>';
         Object.values(row).forEach((value) => {
-            tableHTML += '<td>' + value + '</td>';
+            tableHTML += '<td>' + escapeHtml(String(value ?? '')) + '</td>';
         });
         tableHTML += '</tr>';
     });
     tableHTML += '</tbody>';
-    tableHTML += '</table>';
 
-    tableHTML = `<!DOCTYPE html>
-    <html>
-    <head>
-    <style>
-    #ted_001 {
-      font-family: Arial, Helvetica, sans-serif;
-      border-collapse: collapse;
-      width: 100%;
-    }
-    
-    #ted_001 td, #ted_001 th {
-      border: 1px solid #ddd;
-      padding: 8px;
-    }
-    
-    #ted_001 tr:nth-child(even){background-color: #f2f2f2;}
-    
-    #ted_001 tr:hover {background-color: #ddd;}
-    
-    #ted_001 th {
-      padding-top: 12px;
-      padding-bottom: 12px;
-      text-align: left;
-      background-color: #04AA6D;
-      color: white;
-    }
-    </style>
-    </head>
-    <body>
-    ${tableHTML}
-    </body>
-</html>
-    `;
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Report</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+    margin: 2rem;
+    color: #333;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    color: #1F4E79;
+  }
+  #report_table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.85rem;
+  }
+  #report_table th,
+  #report_table td {
+    border: 1px solid #c0c0c0;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  #report_table thead th {
+    background-color: #1F4E79;
+    color: #ffffff;
+    font-weight: 600;
+    text-align: center;
+    position: sticky;
+    top: 0;
+  }
+  #report_table tbody tr:nth-child(even) {
+    background-color: #E8F0FE;
+  }
+  #report_table tbody tr:hover {
+    background-color: #d2e3fc;
+  }
+  #report_table td {
+    vertical-align: top;
+  }
+  @media print {
+    #report_table { font-size: 0.75rem; }
+    #report_table thead th { position: static; }
+  }
+</style>
+</head>
+<body>
+<h1>Report</h1>
+<table id="report_table">
+${tableHTML}
+</table>
+</body>
+</html>`;
+}
 
-    return tableHTML;
+/**
+ * Escapes HTML special characters to prevent injection.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
 /**
  * Formats data for export and checks if any cell exceeds the character limit.
- * @param {Array} array_data 
- * @param {Object} columns 
- * @param {number} text_length_limit_in_cell 
+ * @param {Array} array_data
+ * @param {Object} columns
+ * @param {number} text_length_limit_in_cell
  * @returns {{data: Array, exceedsLimit: boolean}}
  */
 function FormatDataToExport(array_data, columns, text_length_limit_in_cell = 0) {
@@ -154,7 +192,7 @@ function FormatDataToExport(array_data, columns, text_length_limit_in_cell = 0) 
                 }
             }
 
-            // Remove internal hash if present (though usually filtered out by key selection or just delete it)
+            // Remove internal hash if present
             if (key !== 'internal_hash_row') {
                 newRow[key] = value;
             }
@@ -166,15 +204,79 @@ function FormatDataToExport(array_data, columns, text_length_limit_in_cell = 0) 
     return { data, exceedsLimit };
 }
 
+/**
+ * Applies cell styles to a worksheet for xlsx-js-style.
+ * Header row: dark blue background, white bold text, centered.
+ * Data rows: alternating white / light blue (zebra).
+ * @param {Object} ws - The worksheet object.
+ */
+function applyWorksheetStyles(ws) {
+    const range = XLSX.utils.decode_range(ws['!ref']);
+
+    // Style the header row (row 0)
+    for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddr = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (ws[cellAddr]) {
+            ws[cellAddr].s = {
+                font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+                fill: { fgColor: { rgb: '1F4E79' }, patternType: 'solid' },
+                alignment: { horizontal: 'center', vertical: 'center' },
+                border: {
+                    top: { style: 'thin', color: { rgb: 'C0C0C0' } },
+                    bottom: { style: 'thin', color: { rgb: 'C0C0C0' } },
+                    left: { style: 'thin', color: { rgb: 'C0C0C0' } },
+                    right: { style: 'thin', color: { rgb: 'C0C0C0' } }
+                }
+            };
+        }
+    }
+
+    // Style data rows with zebra striping
+    for (let row = range.s.r + 1; row <= range.e.r; row++) {
+        const isEven = (row - 1) % 2 === 1;
+        for (let col = range.s.c; col <= range.e.c; col++) {
+            const cellAddr = XLSX.utils.encode_cell({ r: row, c: col });
+            if (ws[cellAddr]) {
+                ws[cellAddr].s = {
+                    font: { sz: 10 },
+                    fill: isEven
+                        ? { fgColor: { rgb: 'E8F0FE' }, patternType: 'solid' }
+                        : { fgColor: { rgb: 'FFFFFF' }, patternType: 'solid' },
+                    border: {
+                        top: { style: 'thin', color: { rgb: 'C0C0C0' } },
+                        bottom: { style: 'thin', color: { rgb: 'C0C0C0' } },
+                        left: { style: 'thin', color: { rgb: 'C0C0C0' } },
+                        right: { style: 'thin', color: { rgb: 'C0C0C0' } }
+                    }
+                };
+            }
+        }
+    }
+
+    // Auto-fit column widths based on content
+    const colWidths = [];
+    for (let col = range.s.c; col <= range.e.c; col++) {
+        let maxWidth = 8;
+        for (let row = range.s.r; row <= range.e.r; row++) {
+            const cellAddr = XLSX.utils.encode_cell({ r: row, c: col });
+            const cellValue = ws[cellAddr] ? String(ws[cellAddr].v ?? '') : '';
+            maxWidth = Math.max(maxWidth, Math.min(cellValue.length + 2, 60));
+        }
+        colWidths.push({ wch: maxWidth });
+    }
+    ws['!cols'] = colWidths;
+}
+
 export const ExportTableToXlsx = (filteredData, columns, fileNameExport) => {
     try {
         // limit for Excel cells is 32767 characters.
-        // We pass 0 (no truncation) to get full data, but FormatDataToExport checks excelLimit internally for the flag.
         const { data: FormatedData, exceedsLimit } = FormatDataToExport(filteredData, columns, 0);
 
         if (FormatedData && FormatedData.length > 0) {
             /* Create a worksheet */
             const ws = XLSX.utils.json_to_sheet(FormatedData);
+            /* Apply styles to headers and zebra rows */
+            applyWorksheetStyles(ws);
             /* Create a new empty workbook, then add the worksheet */
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Report');
@@ -190,7 +292,7 @@ export const ExportTableToXlsx = (filteredData, columns, fileNameExport) => {
                 bookType: ExtensionFile,
                 bookSST: false,
                 type: 'binary',
-                FS: ';' // Semicolon for CSV separation (common in some locales, maybe make configurable?)
+                FS: ';'
             };
             XLSX.writeFile(wb, NameFile, wopts);
         }

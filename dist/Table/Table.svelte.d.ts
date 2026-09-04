@@ -116,7 +116,7 @@ declare const Table: import("svelte").Component<{
     onchangecell?: Function;
 } & Record<string, any>, {
     GetSelectedRows: () => any[];
-}, "RawDataTable" | "selectionType" | "columns" | "showNewButton" | "showEditButton" | "showEditRow" | "showSelectionButton" | "showExportButton" | "iconExport" | "iconDeleteRow" | "showDeleteButton" | "pageSize" | "pageSizeSelected" | "relatedTablesForAutoRefresh" | "fileNameExport" | "requestData" | "left_items" | "right_items">;
+}, "requestData" | "showExportButton" | "showDeleteButton" | "showEditButton" | "showNewButton" | "showSelectionButton" | "selectionType" | "iconExport" | "iconDeleteRow" | "left_items" | "right_items" | "pageSize" | "pageSizeSelected" | "RawDataTable" | "columns" | "showEditRow" | "relatedTablesForAutoRefresh" | "fileNameExport">;
 /**
  * Configurable properties for the advanced data Table component.
  * Supports auto-refresh, pagination, searching, CRUD actions, and server-side fetching.

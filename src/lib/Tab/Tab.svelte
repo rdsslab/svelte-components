@@ -120,9 +120,3 @@
 {#if children}
 	{@render children()}
 {/if}
-
-<style>
-	.tab-margin {
-		margin-bottom: 0.75em;
-	}
-</style>

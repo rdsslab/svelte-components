@@ -1,6 +1,6 @@
 {
   "name": "@rdsslab/svelte-components",
-  "version": "1.3.22",
+  "version": "1.3.23",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -28,6 +28,8 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test tests/rest-tester-ui.spec.js",
     "format": "prettier --write .",
     "reinstall": "rm -rf node_modules package-lock.json && npm install"
   },
@@ -46,6 +48,7 @@
     "svelte": "^5.57.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/package": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",

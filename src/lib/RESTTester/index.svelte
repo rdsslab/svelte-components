@@ -87,12 +87,20 @@
 	import Body from './body.svelte';
 	import uFetch from '@rdsslab/uFetch';
 	import JSONView from '../JSONView/index.svelte';
+	import {
+		normalizeRequest,
+		downloadRequestFile,
+		getRequestHeaders,
+		toHeadersObject,
+		REST_EXPORT_FORMATS
+	} from './request.js';
 
 	let {
 		url = $bindable(''),
 		method = $bindable('GET'),
 		limitSizeResponseView = $bindable(20000),
 		methodDisabled = $bindable(false),
+		showExport = $bindable(true),
 		data = $bindable({
 			query: [
 				{
@@ -140,6 +148,8 @@
 	let show_headers = $state(false);
 	let running = $state(false);
 	let elapsed_ms = $state(0);
+	let export_menu_open = $state(false);
+	let export_error = $state('');
 	let uF; // current uFetch instance, kept accessible so it can be aborted
 	let timerInterval;
 	//	let sizeKBResponse = $state(0);
@@ -364,150 +374,43 @@
 		return resultado;
 	}
 
-	function createFormData(data) {
-		const formData = new FormData();
+	/**
+	 * Modelo normalizado de la solicitud actual. Es la única fuente de verdad que
+	 * comparten el envío (uFetch) y los exportadores (.http / .sh / .ps1).
+	 */
+	function currentRequestModel() {
+		return normalizeRequest({ url, method, data });
+	}
 
-		for (let index = 0; index < data.length; index++) {
-			const f = data[index];
+	function exportRequest(format, secrets) {
+		export_error = '';
 
-			if (f.value instanceof FileList) {
-				for (let i = 0; i < f.value.length; i++) {
-					formData.append(f.key, f.value[i], f.value[i].name);
-				}
-			} else {
-				formData.append(f.key, f.value);
+		try {
+			const model = currentRequestModel();
+
+			if (!model.url || model.url.length <= 5) {
+				export_error = 'Add a valid URL before exporting.';
+				return;
 			}
-		}
 
-		return formData;
-	}
-
-	function getDataBody() {
-		let dataBody;
-		//console.log('getDataBody > ', data.body);
-
-		switch (data.body.selection) {
-			case 0: // JSON
-				try {
-					let jsoncode = data?.body?.json?.code ?? undefined;
-					if (typeof jsoncode == 'object') {
-						dataBody = jsoncode;
-					} else {
-						dataBody = JSON.parse(jsoncode);
-					}
-				} catch (error) {
-					console.warn(error);
-					dataBody = {};
-				}
-				break;
-			case 1: // XML
-				dataBody = data.body.xml?.code || '';
-				break;
-			case 2: // Text
-				dataBody = data.body.text?.value || '';
-				break;
-			case 3: // Form-Data
-				dataBody = createFormData(data.body.form);
-				break;
-			case 4: // Form-UrlEncoded
-				// Reuse logic from getDataQuery to get object {key:value}
-				const obj = getDataQuery(data.body.urlencoded);
-				const params = new URLSearchParams();
-				for (const key in obj) {
-					params.append(key, obj[key]);
-				}
-				dataBody = params;
-				break;
-			default:
-				dataBody = undefined;
-				break;
-		}
-
-		return dataBody;
-	}
-
-	function getDataHeaders(data_table) {
-		let result = {};
-		//		console.log(data_table);
-		if (data_table && Array.isArray(data_table)) {
-			for (let i = 0; i < data_table.length; i++) {
-				if (data_table[i].enabled && data_table[i].key && data_table[i].key.length > 0) {
-					result[data_table[i].key] = data_table[i].value;
-				}
+			if (secrets === 'literal' && model.auth.configured) {
+				const accepted = confirm(
+					'The exported file will contain the current credentials in plain text. Continue?'
+				);
+				if (!accepted) return;
 			}
-		}
 
-		return result;
-	}
-
-	function isSpecialBody(body) {
-		// Referencias seguras para entornos donde el global podría no existir (SSR/Node)
-		if (typeof FormData !== 'undefined' && body instanceof FormData) return true;
-		if (typeof Blob !== 'undefined' && body instanceof Blob) return true;
-		if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) return true;
-		if (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) return true;
-		if (typeof ArrayBuffer !== 'undefined' && body instanceof ArrayBuffer) return true;
-		return false;
-	}
-
-	function toBase64(input) {
-		if (typeof btoa === 'function') return btoa(input);
-		if (typeof Buffer !== 'undefined') return Buffer.from(input).toString('base64');
-		return input;
-	}
-
-	function buildRequestHeaders(headers_table, body = undefined) {
-		const headers = {};
-
-		// Headers configurados por el usuario (solo habilitados y con key)
-		const configured = getDataHeaders(headers_table);
-		for (const key in configured) {
-			if (configured[key] !== undefined) headers[key] = configured[key];
-		}
-
-		// Autorización derivada (misma lógica que uFetch) para reflejar lo realmente enviado.
-		if (
-			data.auth &&
-			data.auth.selection == 1 &&
-			data.auth.basic.username &&
-			data.auth.basic.password
-		) {
-			const credentials = `${data.auth.basic.username}:${data.auth.basic.password}`;
-			headers.Authorization = `Basic ${toBase64(credentials)}`;
-		}
-
-		if (data.auth && data.auth.selection == 2 && data.auth.bearer.token) {
-			headers.Authorization = `Bearer ${data.auth.bearer.token}`;
-		}
-
-		// El mismo Content-Type que uFetch agrega automáticamente para cuerpos no-string
-		if (
-			!headers['Content-Type'] &&
-			body != null &&
-			typeof body !== 'string' &&
-			!isSpecialBody(body)
-		) {
-			headers['Content-Type'] = 'application/json';
-		}
-
-		// uFetch elimina Content-Length de los headers
-		delete headers['Content-Length'];
-
-		return Object.entries(headers).map(([key, value]) => ({ key, value }));
-	}
-
-	function getDataQuery(data_table) {
-		let result = {};
-		//		console.log(data_table);
-		if (data_table && Array.isArray(data_table)) {
-			for (let i = 0; i < data_table.length; i++) {
-				if (data_table[i].enabled && data_table[i].key && data_table[i].key.length > 0) {
-					result[data_table[i].key] = data_table[i].value;
-				}
+			if (model.notices.length > 0) {
+				const accepted = confirm(`${model.notices.join('\n')}\n\nDo you want to continue?`);
+				if (!accepted) return;
 			}
-		}
 
-		return result;
+			downloadRequestFile(model, format, { secrets });
+		} catch (error) {
+			export_error = error?.message || String(error);
+		} finally {
+			export_menu_open = false;
+		}
 	}
 
 	function currentDateFormated() {
@@ -869,9 +772,80 @@
 							</p>
 						</div>
 					</span>
+					{#if showExport}
+						{#if export_menu_open}
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div
+								class="export_backdrop"
+								role="presentation"
+								onclick={() => (export_menu_open = false)}
+							></div>
+						{/if}
+						<span class="level-item">
+							<div class="dropdown is-right" class:is-active={export_menu_open}>
+								<div class="dropdown-trigger">
+									<button
+										class="button is-small is-info is-light"
+										class:is-outlined={!export_menu_open}
+										aria-haspopup="true"
+										aria-expanded={export_menu_open}
+										data-testid="export-toggle"
+										onclick={() => {
+											console.log('DEBUG click toggle');
+											export_error = '';
+											export_menu_open = !export_menu_open;
+											console.log('DEBUG estado', export_menu_open);
+										}}
+									>
+										<span class="icon is-small">
+											<i class="fa-solid fa-file-export"></i>
+										</span>
+										<span>Export</span>
+										<span class="icon is-small">
+											<i class="fa-solid fa-chevron-down"></i>
+										</span>
+									</button>
+								</div>
+								<div class="dropdown-menu">
+									<div class="dropdown-content">
+										<p class="dropdown-item is-size-7 has-text-weight-semibold">
+											Con variables de entorno
+										</p>
+										{#each REST_EXPORT_FORMATS as format (format.id)}
+											<button
+												type="button"
+												class="dropdown-item is-text-left"
+												data-testid="export-{format.id}-safe"
+												onclick={() => exportRequest(format.id, 'variables')}
+											>
+												{format.label}
+											</button>
+										{/each}
+
+										<hr class="dropdown-divider" />
+										<p class="dropdown-item is-size-7 has-text-weight-semibold">
+											Con credenciales (texto plano)
+										</p>
+										{#each REST_EXPORT_FORMATS as format (format.id)}
+											<button
+												type="button"
+												class="dropdown-item is-text-left"
+												data-testid="export-{format.id}-literal"
+												onclick={() => exportRequest(format.id, 'literal')}
+											>
+												{format.label}
+											</button>
+										{/each}
+									</div>
+								</div>
+							</div>
+						</span>
+					{/if}
 					<span class="level-item">
 						<button
 							class="button is-small {running ? 'is-danger' : 'is-success'} is-outlined"
+							data-testid="resttester-execute"
 							onclick={async () => {
 								if (running) {
 									const confirmedAbort = confirm(
@@ -887,58 +861,18 @@
 
 								{
 									running = true;
-									let data_send = undefined;
 									let startTime;
 
 									// Instantiate uFetch here to prevent Auth header leakage between requests
 									uF = new uFetch();
 
-									//	console.log('URL: ', url, data);
+									// console.log('URL: ', url, data);
 
-									if (url && url.length > 5) {
+									// Fuente única de verdad: la misma que usan los exportadores.
+									const req_model = currentRequestModel();
+
+									if (req_model.url && req_model.url.length > 5) {
 										try {
-											let final_url = url;
-											let queryParams = getDataQuery(data.query);
-
-											if (queryParams && Object.keys(queryParams).length > 0) {
-												const sp = new URLSearchParams(queryParams);
-												const queryString = sp.toString();
-												if (queryString) {
-													const hashIndex = final_url.indexOf('#');
-													let hash = '';
-													let urlWithoutHash = final_url;
-
-													if (hashIndex !== -1) {
-														hash = final_url.substring(hashIndex);
-														urlWithoutHash = final_url.substring(0, hashIndex);
-													}
-
-													const separator = urlWithoutHash.includes('?') ? '&' : '?';
-													final_url = urlWithoutHash + separator + queryString + hash;
-												}
-											}
-
-											if (
-												method == 'GET' ||
-												method == 'HEAD' ||
-												method == 'OPTIONS' ||
-												method == 'CONNECT' ||
-												method == 'TRACE'
-											) {
-												data_send = undefined;
-											} else if (
-												method == 'POST' ||
-												method == 'PUT' ||
-												method == 'PATCH' ||
-												method == 'DELETE'
-											) {
-												let bodyData = getDataBody();
-
-												if (bodyData) {
-													data_send = bodyData;
-												}
-											}
-
 											resetResponse();
 											// Capturamos el tiempo inicial
 											startTime = Date.now();
@@ -948,28 +882,20 @@
 												elapsed_ms = Date.now() - startTime;
 											}, 100);
 
-											if (
-												data.auth &&
-												data.auth.selection == 1 &&
-												data.auth.basic.username &&
-												data.auth.basic.password
-											) {
-												uF.setBasicAuthorization(
-													data.auth.basic.username,
-													data.auth.basic.password
-												);
+											if (req_model.auth.configured && req_model.auth.type === 'basic') {
+												uF.setBasicAuthorization(req_model.auth.username, req_model.auth.password);
 											}
 
-											if (data.auth && data.auth.selection == 2 && data.auth.bearer.token) {
-												uF.setBearerAuthorization(data.auth.bearer.token);
+											if (req_model.auth.configured && req_model.auth.type === 'bearer') {
+												uF.setBearerAuthorization(req_model.auth.token);
 											}
 
-											let req_method = method ? String(method).toLowerCase() : 'get';
-											request_headers = buildRequestHeaders(data.headers, data_send);
+											let req_method = req_model.method.toLowerCase();
+											request_headers = getRequestHeaders(req_model, 'literal');
 											last_response = await uF[req_method]({
-												url: final_url,
-												data: data_send,
-												headers: getDataHeaders(data.headers)
+												url: req_model.url,
+												...(req_model.body.hasBody ? { body: req_model.body.runtime } : {}),
+												headers: toHeadersObject(req_model)
 											});
 
 											response_headers = Array.from(last_response.headers.entries()).map(
@@ -1074,6 +1000,10 @@
 		</div>
 	</div>
 
+	{#if export_error}
+		<div class="notification is-danger is-light export_error">{export_error}</div>
+	{/if}
+
 	{#if data}
 		<Tab
 			bind:tabs={tabList}
@@ -1098,5 +1028,21 @@
 <style>
 	.block_marg {
 		margin: 0.25em;
+	}
+
+	.export_backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 20;
+	}
+
+	.dropdown {
+		z-index: 30;
+	}
+
+	.export_error {
+		margin-top: 0.35rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.85rem;
 	}
 </style>

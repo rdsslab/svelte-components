@@ -14,6 +14,19 @@ import EditorContent from './EditorContent/index.svelte';
 import BasicSelect from './Select/BasicSelect.svelte';
 import SlideFullScreen from './SlideFullScreen/SlideFullScreen.svelte';
 import RESTTester from './RESTTester/index.svelte';
+import {
+	normalizeRequest,
+	serializeRequest,
+	serializeHttp,
+	serializeCurlShell,
+	serializePowerShell,
+	downloadRequestFile,
+	getRequestHeaders,
+	toHeadersObject,
+	REST_EXPORT_FORMATS,
+	AUTH_TYPES,
+	BODY_TYPES
+} from './RESTTester/request.js';
 import JSONView from './JSONView/index.svelte';
 import MenuMega from './MenuMega/index.svelte';
 import Modal from './Modal/Modal.svelte';
@@ -50,6 +63,17 @@ export {
 	EditorCode,
 	sha256,
 	RESTTester,
+	normalizeRequest,
+	serializeRequest,
+	serializeHttp,
+	serializeCurlShell,
+	serializePowerShell,
+	downloadRequestFile,
+	getRequestHeaders,
+	toHeadersObject,
+	REST_EXPORT_FORMATS,
+	AUTH_TYPES,
+	BODY_TYPES,
 	JSONView,
 	copyTextToClipboard,
 	MenuMega,

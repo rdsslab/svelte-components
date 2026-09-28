@@ -27,6 +27,15 @@
 	export let showResetButton = false;
 	export let showCode = true;
 
+	/**
+	 * `data-testid` para distinguir varios EditorCode en la misma pagina.
+	 *
+	 * No hay forma de distinguir uno suelto por su contenido: los valores son
+	 * justamente lo que se esta probando, asi que un selector basado en el texto
+	 * cambiaria en el momento en que la prueba necesita comprobar que cambio.
+	 */
+	export let containerTestId = null;
+
 	export let onchange = null;
 
 	let editorView = null;
@@ -35,9 +44,63 @@
 	let internalCode = '';
 	let lastCode = '';
 	let formatError = false;
+	// El texto exacto que el editor esta mostrando porque se lo pusimos nosotros a
+	// partir de un valor que no era texto. Sirve para no reenviarlo hacia arriba: si el
+	// usuario no ha escrito nada, ese texto es una representacion nuestra, no su
+	// intencion, y mandarselo de vuelta cambia el tipo del valor guardado.
+	let renderedFromValue = null;
 
 	let debounceTimer = null;
 	const DEBOUNCE_MS = 350;
+
+	/**
+	 * Como se representa en el editor un valor que no es texto.
+	 *
+	 * Antes era `String(newCode)`, que convierte cualquier objeto en "[object Object]".
+	 * Eso no era solo una pantalla fea: al escribir un caracter, `updateFromEditor`
+	 * devolvia esa cadena al padre y el objeto se sustituia por "[object Object]x" en
+	 * el siguiente guardado. Verificado en el navegador contra esta pagina de demo: con
+	 * el codigo anterior, teclear un unico caracter sobre un valor objeto lo dejaba
+	 * como string, y el boton de reset lo dejaba como "[object Object]".
+	 *
+	 * Ahora se serializa a JSON, que es fiel y editable. Sigue siendo texto, pero un
+	 * texto que contiene el valor entero, de modo que una perdida de tipo ya no puede
+	 * ser una perdida de contenido.
+	 *
+	 * Un lang cuyo valor es texto plano (`string`, `html`, `sql`, `xml`, `js`, `none`)
+	 * no necesita rama propia: ahi convertir a texto es una identidad. `boolean` si la
+	 * necesita, y por eso no cae en el `String()` del final. Su valor es un booleano, y
+	 * convertirlo a la cadena "false" lo devolveria truthy en JavaScript: es el mismo
+	 * defecto que arrastraba el flag de recuperacion de contrasena en el backend.
+	 */
+	function valueToText(newCode, langValue) {
+		if (typeof newCode === 'string') return newCode;
+		if (langValue === 'boolean') return newCode ? 'true' : 'false';
+		if (newCode === null || newCode === undefined) return '';
+		if (typeof newCode === 'object') {
+			try {
+				return JSON.stringify(newCode, null, 2);
+			} catch (err) {
+				// Un objeto con ciclo: JSON.stringify lanza. Se avisa y se deja el texto
+				// vacio, pero nunca "[object Object]", que no se puede deshacer.
+				console.warn('EditorCode: no se pudo serializar el valor', err);
+				return '';
+			}
+		}
+		return String(newCode);
+	}
+
+	/**
+	 * El texto a escribir en el editor, y si es una representacion que nosotros
+	 * fabricamos de un valor que no era texto (y que por tanto no debe volver al padre
+	 * sin que el usuario haya escrito).
+	 */
+	function editorTextFor(newCode, langValue) {
+		if (typeof newCode === 'string') {
+			return { text: newCode, fromValue: false };
+		}
+		return { text: valueToText(newCode, langValue), fromValue: true };
+	}
 
 	// Dark mode: detect system preference
 	let mediaQuery = null;
@@ -76,7 +139,9 @@
 		sql: sql(),
 		xml: xml(),
 		string: [],
-		number: []
+		number: [],
+		// Sin resaltado propio: un boolean solo puede ser `true` o `false`.
+		boolean: []
 	};
 
 	const listLangs = [
@@ -92,7 +157,13 @@
 		{ label: 'SQL', value: 'sql', prettier: 'sql', plugins: [prettierPluginSql] },
 		{ label: 'XML', value: 'xml', prettier: 'html', plugins: [prettierPluginHtml] },
 		{ label: 'String', value: 'string', prettier: '', plugins: [] },
-		{ label: 'Number', value: 'number', prettier: '', plugins: [] }
+		{ label: 'Number', value: 'number', prettier: '', plugins: [] },
+		// `boolean` faltaba aqui y lo sembraba el backend: la app `system` crea
+		// $_VAR_RESET_EMAIL_ENABLED y $_VAR_RESET_TELEGRAM_ENABLED con ese tipo, asi que
+		// se dibujaban con la seleccion en blanco y sin forma de editarlos. El conjunto
+		// canonico de tipos vive en el backend (src/lib/db/appvarType.js del proyecto
+		// OpenFusionAPI); esta lista debe seguirlo.
+		{ label: 'Boolean', value: 'boolean', prettier: '', plugins: [] }
 	];
 
 	function getPrettierParserFor(langValue) {
@@ -111,6 +182,15 @@
 	function updateFromEditor(text) {
 		internalCode = text;
 
+		// Si el texto es exactamente el que nosotros fabricamos al representar un valor
+		// que no era texto, el usuario no ha escrito: no se reenvia nada hacia arriba.
+		// Sin esta guarda, abrir un campo con un valor objeto y teclear un caracter
+		// Guardaba "[object Object]x" en vez del objeto. Verificado en el navegador.
+		if (renderedFromValue !== null && text === renderedFromValue) {
+			return;
+		}
+		renderedFromValue = null;
+
 		if (lang === 'json') {
 			try {
 				const parsed = JSON.parse(text);
@@ -126,6 +206,21 @@
 				formatError = Number.isNaN(parsed);
 			} catch (error) {
 				console.error(error);
+				formatError = true;
+			}
+		} else if (lang === 'boolean') {
+			// Un boolean se entrega como boolean. Si se dejara caer en el `else` de
+			// abajo, el padre recibiria la cadena "false", que en JavaScript es truthy:
+			// el flag se leeria como encendido estando apagado.
+			const normalized = text.trim().toLowerCase();
+			if (['true', '1', 'yes', 'on'].includes(normalized)) {
+				code = true;
+				formatError = false;
+			} else if (['false', '0', 'no', 'off'].includes(normalized)) {
+				code = false;
+				formatError = false;
+			} else {
+				code = text;
 				formatError = true;
 			}
 		} else {
@@ -148,16 +243,13 @@
 	async function updateEditorFromProp(newCode, withFormat = false) {
 		if (!editorView) return;
 
-		let text = newCode;
-		try {
-			if (lang === 'json' && typeof newCode !== 'string') {
-				text = JSON.stringify(newCode, null, 2);
-			} else if (typeof newCode !== 'string') {
-				text = String(newCode);
-			}
-		} catch (err) {
-			console.warn('updateEditorFromProp: error serializing code', err);
-		}
+		// `valueToText` sustituye al `String(newCode)` de antes, que producia
+		// "[object Object]" para cualquier objeto. El segundo campo dice si lo que va
+		// a aparecer en pantalla es una representacion nuestra de un valor que no era
+		// texto, para que `updateFromEditor` no lo reenvie al padre sin que el usuario
+		// haya escrito nada.
+		const { text: initialText, fromValue } = editorTextFor(newCode, lang);
+		let text = initialText;
 
 		if (withFormat) {
 			try {
@@ -175,7 +267,14 @@
 			const tr = editorView.state.update({
 				changes: { from: 0, to: current.length, insert: text }
 			});
+			// Se marca ANTES del dispatch, porque el dispatch dispara el updateListener y
+			// con el la escritura diferida de `updateFromEditor`, que compara contra este
+			// valor para no reenviar lo que nosotros acabamos de escribir.
+			renderedFromValue = fromValue ? text : null;
 			editorView.dispatch(tr);
+		} else {
+			// El texto ya era el correcto, no hay nada que escribir y nada que proteger.
+			renderedFromValue = fromValue ? text : null;
 		}
 	}
 
@@ -198,13 +297,13 @@
 			editorView = null;
 		}
 
-		internalCode =
-			typeof code === 'string'
-				? code
-				: lang === 'json'
-					? JSON.stringify(code, null, 2)
-					: String(code);
+		// Mismo criterio que en `updateEditorFromProp`, y por el mismo motivo: el
+		// `String(code)` de aqui ponia "[object Object]" en pantalla para cualquier
+		// valor que no fuera texto.
+		const { text, fromValue } = editorTextFor(code, lang);
+		internalCode = text;
 		lastCode = internalCode;
+		renderedFromValue = fromValue ? text : null;
 
 		editorView = new EditorView({
 			doc: internalCode,
@@ -243,10 +342,10 @@
 
 	$: if (initialized && code !== undefined) {
 		const editorText = editorView ? editorView.state.doc.toString() : '';
-		const candidateText =
-			lang === 'json' && typeof code !== 'string'
-				? JSON.stringify(code, null, 2)
-				: String(code ?? '');
+		// El tercer `String()` de este componente, y el que masaba: comparar el texto
+		// del editor contra `String(code)` hacia que un objeto se escribiera en pantalla
+		// como "[object Object]" en cuanto el valor llegaba del padre.
+		const candidateText = valueToText(code, lang);
 		if (candidateText !== editorText) {
 			updateEditorFromProp(code);
 		}
@@ -447,7 +546,7 @@
 
 <Level left={[left]} right={[right, r01]}></Level>
 
-<div class={showCode ? '' : 'is-hidden'}>
+<div class={showCode ? '' : 'is-hidden'} data-testid={containerTestId}>
 	<div bind:this={containerEl}></div>
 </div>
 

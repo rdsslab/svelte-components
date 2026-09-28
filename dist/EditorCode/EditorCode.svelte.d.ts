@@ -12,6 +12,7 @@ type EditorCode = SvelteComponent<{
     showHiddenButton?: boolean;
     showResetButton?: boolean;
     showCode?: boolean;
+    containerTestId?: any;
     setCode?: (newCode: any) => void;
     getCode?: () => any;
 }, {
@@ -38,6 +39,7 @@ declare const EditorCode: $$__sveltets_2_IsomorphicComponent<{
     showHiddenButton?: boolean;
     showResetButton?: boolean;
     showCode?: boolean;
+    containerTestId?: any;
     setCode?: (newCode: any) => void;
     getCode?: () => any;
 }, {

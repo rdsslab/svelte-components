@@ -41,6 +41,18 @@ ORDER BY total_orders DESC;`;
 	// --- Editor 6: Number ---
 	let numberCode = 42;
 
+	// --- Editor 8: Boolean ---
+	let booleanCode = true;
+
+	// --- Editor 9: tipo que el desplegable no conoce ---
+	// `boolean` se sembraba en el backend pero no estaba en `listLangs`, asi que una
+	// AppVar de ese tipo se dibujaba con la seleccion en blanco y el `select`
+	// `bind:value` devolvia undefined: el editor se quedaba sin `lang`, y a partir de
+	// ahi cualquier conversion de `String()` podia pisar el valor. Se reproduce aqui
+	// a proposito, con un lang que la lista no contiene.
+	let unknownLangCode = { a: 1 };
+	let unknownLang = 'inventado';
+
 	// --- Editor refs para API ---
 	let jsonEditorRef;
 	let jsEditorRef;
@@ -49,7 +61,10 @@ ORDER BY total_orders DESC;`;
 	let selectedLang = 'json';
 
 	function handleJsonChange(e) {
-		jsonLog = [...jsonLog.slice(-4), `[${new Date().toLocaleTimeString()}] ${e.typeof}: ${JSON.stringify(e.code)}`];
+		jsonLog = [
+			...jsonLog.slice(-4),
+			`[${new Date().toLocaleTimeString()}] ${e.typeof}: ${JSON.stringify(e.code)}`
+		];
 	}
 
 	function handleJsChange(e) {
@@ -70,7 +85,9 @@ ORDER BY total_orders DESC;`;
 	}
 
 	function setSampleJs() {
-		jsEditorRef?.setCode(`// Updated at ${new Date().toLocaleTimeString()}\nconst x = ${Math.floor(Math.random() * 100)};`);
+		jsEditorRef?.setCode(
+			`// Updated at ${new Date().toLocaleTimeString()}\nconst x = ${Math.floor(Math.random() * 100)};`
+		);
 	}
 </script>
 
@@ -96,7 +113,9 @@ ORDER BY total_orders DESC;`;
 <!-- ============================== -->
 <h2 class="title is-5 mt-5">1. JSON - Binding bidireccional + API</h2>
 <p class="mb-3 is-size-7 has-text-grey">
-	El objeto <code>jsonCode</code> se sincroniza en ambas direcciones. Usa los botones para probar <code>setCode()</code> y <code>getCode()</code>.
+	El objeto <code>jsonCode</code> se sincroniza en ambas direcciones. Usa los botones para probar
+	<code>setCode()</code>
+	y <code>getCode()</code>.
 </p>
 
 <div class="columns">
@@ -127,7 +146,13 @@ ORDER BY total_orders DESC;`;
 		</div>
 		<div class="content is-size-7">
 			<p><strong>Parent value:</strong></p>
-			<pre class="p-2" style="background: var(--bulma-scheme-main-bis); border-radius: 4px; white-space: pre-wrap;">{JSON.stringify(jsonCode, null, 2)}</pre>
+			<pre
+				class="p-2"
+				style="background: var(--bulma-scheme-main-bis); border-radius: 4px; white-space: pre-wrap;">{JSON.stringify(
+					jsonCode,
+					null,
+					2
+				)}</pre>
 		</div>
 	</div>
 </div>
@@ -159,9 +184,7 @@ ORDER BY total_orders DESC;`;
 <!-- 3. SQL editable                -->
 <!-- ============================== -->
 <h2 class="title is-5 mt-5">3. SQL - Editable</h2>
-<p class="mb-3 is-size-7 has-text-grey">
-	Sintaxis SQL resaltada con formateo available.
-</p>
+<p class="mb-3 is-size-7 has-text-grey">Sintaxis SQL resaltada con formateo available.</p>
 
 <EditorCode
 	bind:code={sqlCode}
@@ -176,9 +199,7 @@ ORDER BY total_orders DESC;`;
 <!-- 4. HTML                        -->
 <!-- ============================== -->
 <h2 class="title is-5 mt-5">4. HTML/XML</h2>
-<p class="mb-3 is-size-7 has-text-grey">
-	Ambos usan el parser de HTML de Prettier.
-</p>
+<p class="mb-3 is-size-7 has-text-grey">Ambos usan el parser de HTML de Prettier.</p>
 
 <div class="columns">
 	<div class="column">
@@ -196,22 +217,82 @@ ORDER BY total_orders DESC;`;
 <!-- ============================== -->
 <h2 class="title is-5 mt-5">5. Number</h2>
 <p class="mb-3 is-size-7 has-text-grey">
-	El editor muestra un valor numérico. El botón "Parser" valida y normaliza el número.
-	El binding sincroniza el valor como <code>number</code> cuando es válido.
+	El editor muestra un valor numérico. El botón "Parser" valida y normaliza el número. El binding
+	sincroniza el valor como <code>number</code> cuando es válido.
 </p>
 
 <div class="columns">
 	<div class="column is-6">
-		<EditorCode
-			bind:code={numberCode}
-			lang="number"
-			showFormat={true}
-			showResetButton={true}
-		/>
+		<EditorCode bind:code={numberCode} lang="number" showFormat={true} showResetButton={true} />
 	</div>
 	<div class="column is-6">
 		<div class="content is-size-7">
 			<p><strong>Parent value:</strong> <code>{numberCode}</code> ({typeof numberCode})</p>
+		</div>
+	</div>
+</div>
+
+<!-- ============================== -->
+<!-- 8. Boolean                     -->
+<!-- ============================== -->
+<div data-testid="section-boolean">
+	<h2 class="title is-5 mt-5">8. Boolean</h2>
+	<p class="mb-3 is-size-7 has-text-grey">
+		El binding entrega <code>true</code> / <code>false</code> como boolean, no como texto.
+	</p>
+
+	<div class="columns">
+		<div class="column is-6">
+			<EditorCode
+				bind:code={booleanCode}
+				lang="boolean"
+				showFormat={true}
+				showResetButton={true}
+				containerTestId="editor-boolean"
+			/>
+		</div>
+		<div class="column is-6">
+			<div class="content is-size-7">
+				<p data-testid="parent-boolean">
+					<strong>Parent value:</strong> <code>{String(booleanCode)}</code>
+					<span data-testid="type-boolean">({typeof booleanCode})</span>
+				</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- ============================== -->
+<div data-testid="section-unknown-lang">
+	<!-- 9. Lang desconocido            -->
+	<!-- ============================== -->
+	<h2 class="title is-5 mt-5">9. Lang fuera de la lista</h2>
+	<p class="mb-3 is-size-7 has-text-grey">
+		<code>{unknownLang}</code> no esta en <code>listLangs</code>, y el valor es un objeto. Este es
+		el caso que hacia que una AppVar con un tipo que el desplegable no conoce terminara guardando
+		<code>[object Object]</code>.
+	</p>
+
+	<div class="columns">
+		<div class="column is-6">
+			<EditorCode
+				bind:code={unknownLangCode}
+				bind:lang={unknownLang}
+				showResetButton={true}
+				containerTestId="editor-unknown-lang"
+			/>
+		</div>
+		<div class="column is-6">
+			<div class="content is-size-7">
+				<p data-testid="parent-unknown-lang">
+					<strong>Parent value:</strong> <code>{JSON.stringify(unknownLangCode)}</code>
+					<span data-testid="type-unknown-lang">({typeof unknownLangCode})</span>
+				</p>
+				<p>
+					<strong>Lang:</strong>
+					<code data-testid="lang-unknown-lang">{unknownLang ?? '(undefined)'}</code>
+				</p>
+			</div>
 		</div>
 	</div>
 </div>

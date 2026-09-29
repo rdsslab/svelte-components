@@ -31,6 +31,8 @@ const MIME_MULTIPART = 'multipart/form-data';
  * @typedef {Object} RestRequest
  * @property {string} method
  * @property {string} url  URL final, incluyendo el query string
+ * @property {string} base  Base con la que se resolvió la URL (vacía si no hizo falta)
+ * @property {boolean} resolved  true si la URL del campo era relativa y se absolutizó
  * @property {{key: string, value: string}[]} query
  * @property {{key: string, value: string}[]} headers  Headers efectivos (sin Authorization)
  * @property {{type: 'none'|'basic'|'bearer', username: string, password: string, token: string, configured: boolean}} auth
@@ -131,6 +133,44 @@ function headersToObject(headers) {
 	return result;
 }
 
+/**
+ * ¿La URL ya trae su propio host/esquema? Un `//host/x` cuenta como absoluta porque
+ * `new URL` la resolvería igual, pero sin base no se puede materializar.
+ *
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function isAbsoluteUrl(url) {
+	const value = String(url ?? '').trim();
+	if (value === '') return false;
+	if (value.startsWith('//')) return false;
+	return /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(value);
+}
+
+/**
+ * Resuelve la URL del campo contra una base. El navegador resuelve las rutas relativas
+ * contra el documento (`fetch('/api/x')`), pero un `.sh` / `.http` / `.ps1` se ejecuta
+ * sin ninguna base, así que hay que escribir el host en el archivo.
+ *
+ * @param {string} url
+ * @param {string} [base]  Origen o `document.baseURI`; vacío = no se puede resolver.
+ * @returns {{url: string, base: string, resolved: boolean}}
+ */
+export function resolveUrlAgainstBase(url, base = '') {
+	const value = String(url ?? '').trim();
+	const baseValue = String(base ?? '').trim();
+
+	if (value === '' || isAbsoluteUrl(value)) return { url: value, base: baseValue, resolved: false };
+	if (baseValue === '') return { url: value, base: '', resolved: false };
+
+	try {
+		return { url: new URL(value, baseValue).toString(), base: baseValue, resolved: true };
+	} catch {
+		// Base inválida: mejor dejar la ruta como estaba que romper la exportación.
+		return { url: value, base: '', resolved: false };
+	}
+}
+
 function buildFinalUrl(url, params) {
 	let finalUrl = url || '';
 	if (params.length === 0) return finalUrl;
@@ -213,16 +253,32 @@ function buildRuntimeFormData(fields) {
 /**
  * Construye el modelo de solicitud a partir del estado actual de RESTTester.
  *
- * @param {{url?: string, method?: string, data?: Record<string, any>}} options
+ * @param {{url?: string, method?: string, data?: Record<string, any>, baseUrl?: string}} options
+ * @param {string} [options.baseUrl]  Base para absolutizar una URL relativa. Si no se
+ *   pasa, la URL se queda como está (y se avisa) porque no hay forma de saber el host.
  * @returns {RestRequest}
  */
-export function normalizeRequest({ url = '', method = 'GET', data = {} } = {}) {
+export function normalizeRequest({ url = '', method = 'GET', data = {}, baseUrl = '' } = {}) {
 	const warnings = [];
 	const notices = [];
 
 	const normalizedMethod = String(method || 'GET').toUpperCase();
 	const query = readEnabledRows(data?.query);
-	const finalUrl = buildFinalUrl(String(url || ''), query);
+
+	// La URL se absolutiza antes de componer el query string: una ruta relativa no tiene
+	// sentido en el archivo exportado, que se ejecuta sin base.
+	const { url: absoluteUrl, base, resolved } = resolveUrlAgainstBase(url, baseUrl);
+	// Cuando sí se resolvió no se agrega nada a `notices`: `index.svelte` pregunta con
+	// `confirm()` por cada notice y no debe interrumpir una exportación normal solo por
+	// usar rutas relativas. El origen usado queda como comentario en el archivo.
+	const isRelative = String(url || '').trim() !== '' && !isAbsoluteUrl(url);
+	if (isRelative && !resolved) {
+		warnings.push(
+			'La URL es relativa y no hay base para resolverla: el archivo usa una ruta relativa, que no funcionará fuera de este sitio.'
+		);
+	}
+
+	const finalUrl = buildFinalUrl(absoluteUrl, query);
 	const auth = readAuth(data);
 
 	let headers = normalizeHeaderRows(data?.headers);
@@ -355,7 +411,18 @@ export function normalizeRequest({ url = '', method = 'GET', data = {} } = {}) {
 		headers = [...headers, { key: 'Content-Type', value: MIME_JSON }];
 	}
 
-	return { method: normalizedMethod, url: finalUrl, query, headers, auth, body, warnings, notices };
+	return {
+		method: normalizedMethod,
+		url: finalUrl,
+		base,
+		resolved,
+		query,
+		headers,
+		auth,
+		body,
+		warnings,
+		notices
+	};
 }
 
 /* -------------------------------------------------------------------------- */
@@ -427,6 +494,9 @@ function secretNoticeFor(model, secrets) {
 
 function commentLines(model, extra = []) {
 	const lines = [`# Método: ${model.method}`, `# URL: ${model.url}`];
+	// Deja constancia del origen con el que se absolutizó la ruta: el archivo ya no
+	// dice de dónde salió el host y sin esto no se puede reconstruir.
+	if (model.resolved && model.base) lines.push(`# URL relativa resuelta contra: ${model.base}`);
 	for (const warning of model.warnings) lines.push(`# AVISO: ${warning}`);
 	for (const notice of model.notices) lines.push(`# NOTA: ${notice}`);
 	for (const line of extra) if (line) lines.push(`# ${line}`);
@@ -652,6 +722,7 @@ export function serializePowerShell(model, { secrets = 'variables' } = {}) {
 		'  Método: ' + model.method,
 		'  URL: ' + model.url
 	];
+	if (model.resolved && model.base) lines.push('  URL relativa resuelta contra: ' + model.base);
 	for (const warning of model.warnings) lines.push(`  AVISO: ${warning}`);
 	for (const notice of model.notices) lines.push(`  NOTA: ${notice}`);
 	const notice = secretNoticeFor(model, secrets);

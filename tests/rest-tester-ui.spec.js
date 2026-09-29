@@ -152,6 +152,43 @@ test.describe('pestaña Import/Export', () => {
 		await download(page, 'export-http-literal');
 		expect(dialogos).toBe(0);
 	});
+
+	test('una URL relativa se exporta absoluta, contra el origen de la página', async ({
+		page,
+		baseURL
+	}) => {
+		const relativa = '/api/portalclientescorporativos/bbdd/auditoria/colaboradores/prd';
+		await prepare(page, { url: relativa });
+		// La vista previa vive en la pestaña, así que primero hay que abrirla.
+		await openImportExportTab(page);
+
+		// Solo aparece cuando la URL es relativa, y dice a qué se resolvió.
+		const preview = page.getByTestId('export-url-preview');
+		await expect(preview).toBeVisible();
+		await expect(preview).toContainText(`${baseURL}${relativa}`);
+
+		const sh = await download(page, 'export-curl-safe');
+		expect(sh.content).toContain(`--url '${baseURL}${relativa}'`);
+		expect(sh.content).toContain(`# URL relativa resuelta contra: ${baseURL}/RestTester`);
+
+		const http = await download(page, 'export-http-safe');
+		expect(http.content).toContain(`GET ${baseURL}${relativa}`);
+
+		const ps1 = await download(page, 'export-powershell-safe');
+		expect(ps1.content).toContain(`$Url = '${baseURL}${relativa}'`);
+	});
+
+	test('una URL absoluta no muestra la vista previa de resolución', async ({ page, baseURL }) => {
+		await prepare(page, { url: `${ECHO}/get` });
+		await openImportExportTab(page);
+
+		await expect(page.getByTestId('export-url-preview')).toHaveCount(0);
+
+		const sh = await download(page, 'export-curl-safe');
+		expect(sh.content).toContain(`--url '${ECHO}/get'`);
+		expect(sh.content).not.toContain('URL relativa resuelta contra');
+		expect(sh.content).not.toContain(baseURL);
+	});
 });
 
 test.describe('importación desde archivo', () => {

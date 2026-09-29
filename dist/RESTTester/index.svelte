@@ -106,6 +106,11 @@
 		methodDisabled = $bindable(false),
 		showExport = $bindable(true),
 		showImport = $bindable(true),
+		/**
+		 * Base para absolutizar una URL relativa al exportar. Vacío = `document.baseURI`,
+		 * que es justo la base que usa `fetch` al enviar. Ej.: `https://api.ejemplo.test`.
+		 */
+		baseUrl = $bindable(''),
 		data = $bindable({
 			query: [
 				{
@@ -387,12 +392,32 @@
 	}
 
 	/**
+	 * Base con la que se absolutizan las rutas relativas. `document.baseURI` replica lo
+	 * que hace `fetch` en el navegador, así que el archivo generado y la petición real
+	 * apuntan al mismo sitio. En SSR / Node no hay documento y no se puede resolver.
+	 */
+	function effectiveBase() {
+		if (baseUrl) return baseUrl;
+		if (typeof document !== 'undefined') return document.baseURI;
+		return '';
+	}
+
+	/**
 	 * Modelo normalizado de la solicitud actual. Es la única fuente de verdad que
 	 * comparten el envío (uFetch) y los exportadores (.http / .sh / .ps1).
 	 */
 	function currentRequestModel() {
-		return normalizeRequest({ url, method, data });
+		return normalizeRequest({ url, method, data, baseUrl: effectiveBase() });
 	}
+
+	/**
+	 * Vista previa de lo que se va a escribir en el archivo cuando la URL del campo es
+	 * relativa. Se deriva del modelo para actualizarse al escribir en el campo URL.
+	 */
+	let export_url_preview = $derived.by(() => {
+		const model = currentRequestModel();
+		return model.resolved ? { url: model.url, base: model.base } : null;
+	});
 
 	function exportRequest(format, secrets) {
 		export_error = '';
@@ -590,6 +615,14 @@
 					>) or a PowerShell script (<code>.ps1</code>). Choose whether the secrets stay as
 					environment variables or are written in plain text.
 				</p>
+
+				{#if export_url_preview}
+					<p class="io_preview" data-testid="export-url-preview">
+						The URL is relative, so it will be exported as
+						<code>{export_url_preview.url}</code> resolved against
+						<code>{export_url_preview.base}</code>
+					</p>
+				{/if}
 
 				<p class="io_group_title">With environment variables</p>
 				<div class="buttons">
@@ -1170,6 +1203,24 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 		color: var(--bulma-text-weak, #4a4a4a);
+	}
+
+	.io_preview {
+		margin-bottom: 0.75rem;
+		padding: 0.5rem 0.6rem;
+		border-left: 3px solid var(--bulma-info-light, #54c6ec);
+		background: var(--bulma-scheme-main-bis, #f5f5f5);
+		border-radius: 3px;
+		font-size: 0.82rem;
+		line-height: 1.45;
+		word-break: break-all;
+	}
+
+	.io_preview code {
+		padding: 0 0.2rem;
+		background: var(--bulma-scheme-main, #fff);
+		border-radius: 3px;
+		font-size: 0.8rem;
 	}
 
 	.io_actions {

@@ -305,6 +305,122 @@ test.describe('normalizeRequest', () => {
 });
 
 /* -------------------------------------------------------------------------- */
+/* URL relativa: el archivo exportado se ejecuta sin base, así que debe         */
+/* llevar el host. En el navegador `fetch` la resuelve sola, por eso el fallo   */
+/* solo aparecía al exportar.                                                   */
+/* -------------------------------------------------------------------------- */
+
+const RELATIVA = '/api/portalclientescorporativos/bbdd/auditoria/colaboradores/prd';
+const BASE = 'http://localhost:5174/RestTester';
+const vacio = { query: [], body: { selection: 0 }, headers: {}, auth: { selection: 0 } };
+
+test.describe('URL relativa al exportar', () => {
+	test('una ruta absoluta se usa tal cual y sin avisos', () => {
+		for (const baseUrl of [BASE, '']) {
+			const model = normalizeRequest({
+				url: 'https://api.ejemplo.test/x',
+				method: 'GET',
+				data: vacio,
+				baseUrl
+			});
+
+			expect(model.url).toBe('https://api.ejemplo.test/x');
+			expect(model.resolved).toBe(false);
+			expect(model.warnings).toEqual([]);
+		}
+	});
+
+	test('una ruta con barra inicial se resuelve contra el origen de la base', () => {
+		const model = normalizeRequest({
+			url: RELATIVA,
+			method: 'GET',
+			data: vacio,
+			baseUrl: BASE
+		});
+
+		expect(model.url).toBe(`http://localhost:5174${RELATIVA}`);
+		expect(model.base).toBe(BASE);
+		expect(model.resolved).toBe(true);
+		expect(model.warnings).toEqual([]);
+	});
+
+	test('sin barra inicial se resuelve como lo haría fetch: el último segmento es un archivo', () => {
+		// Igual que `new URL('api/x', 'https://api.ejemplo.test/app/pagina')` en el navegador:
+		// `pagina` se trata como archivo y se sustituye, igual que en `document.baseURI`.
+		const model = normalizeRequest({
+			url: 'api/x',
+			method: 'GET',
+			data: vacio,
+			baseUrl: 'https://api.ejemplo.test/app/pagina'
+		});
+
+		expect(model.url).toBe('https://api.ejemplo.test/app/api/x');
+	});
+
+	test('el query string se compone sobre la URL ya resuelta', () => {
+		const model = normalizeRequest({
+			url: RELATIVA,
+			method: 'GET',
+			data: { ...vacio, query: [{ enabled: true, key: 'page', value: '2' }] },
+			baseUrl: BASE
+		});
+
+		expect(model.url).toBe(`http://localhost:5174${RELATIVA}?page=2`);
+	});
+
+	test('sin base la ruta se queda relativa, con un aviso y sin romper', () => {
+		const model = normalizeRequest({ url: RELATIVA, method: 'GET', data: vacio });
+
+		expect(model.url).toBe(RELATIVA);
+		expect(model.resolved).toBe(false);
+		expect(model.warnings.join(' ')).toContain('relativa');
+	});
+
+	test('una base inválida no rompe la exportación', () => {
+		const model = normalizeRequest({
+			url: RELATIVA,
+			method: 'GET',
+			data: vacio,
+			baseUrl: 'esto-no-es-una-url'
+		});
+
+		expect(model.url).toBe(RELATIVA);
+		expect(model.warnings.length).toBe(1);
+	});
+
+	test('resolver no dispara un notice, para no pedir confirmación al exportar', () => {
+		const model = normalizeRequest({
+			url: RELATIVA,
+			method: 'GET',
+			data: vacio,
+			baseUrl: BASE
+		});
+
+		expect(model.notices).toEqual([]);
+	});
+
+	test('el origen queda anotado en el archivo y la URL es absoluta', () => {
+		const model = normalizeRequest({
+			url: RELATIVA,
+			method: 'GET',
+			data: vacio,
+			baseUrl: BASE
+		});
+		const absoluta = `http://localhost:5174${RELATIVA}`;
+
+		expect(serializeCurlShell(model)).toContain(`--url '${absoluta}'`);
+		expect(serializeCurlShell(model)).toContain(`# URL relativa resuelta contra: ${BASE}`);
+
+		expect(serializeHttp(model)).toContain(`GET ${absoluta}`);
+		expect(serializeHttp(model)).toContain(`# URL relativa resuelta contra: ${BASE}`);
+
+		const ps1 = serializePowerShell(model);
+		expect(ps1).toContain(`$Url = '${absoluta}'`);
+		expect(ps1).toContain('URL relativa resuelta contra: ' + BASE);
+	});
+});
+
+/* -------------------------------------------------------------------------- */
 /* Contenido de los archivos exportados (determinista)                        */
 /* -------------------------------------------------------------------------- */
 

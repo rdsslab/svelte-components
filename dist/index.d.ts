@@ -13,6 +13,8 @@ import EditorCode from './EditorCode/EditorCode.svelte';
 import { sha256 } from './class/sha.js';
 import RESTTester from './RESTTester/index.svelte';
 import { normalizeRequest } from './RESTTester/request.js';
+import { resolveUrlAgainstBase } from './RESTTester/request.js';
+import { isAbsoluteUrl } from './RESTTester/request.js';
 import { serializeRequest } from './RESTTester/request.js';
 import { serializeHttp } from './RESTTester/request.js';
 import { serializeCurlShell } from './RESTTester/request.js';
@@ -51,4 +53,4 @@ declare namespace ChartWidgets {
 import AppBase from './App/index.svelte';
 import ChartBase from './Chart/index.svelte';
 import ChartTimeSeries from './Chart/TimeSeries/index.svelte';
-export { Table, types as ColumnTypes, DialogModal, storeChangedTables, WebSocketClient, Predictive as PredictiveInput, Level, Tab, Menu, SlideFullScreen, BasicSelect, EditorCode, sha256, RESTTester, normalizeRequest, serializeRequest, serializeHttp, serializeCurlShell, serializePowerShell, downloadRequestFile, getRequestHeaders, toHeadersObject, REST_EXPORT_FORMATS, AUTH_TYPES, BODY_TYPES, REST_IMPORT_FORMATS, REST_IMPORT_ACCEPT, detectImportFormat, parseRequestFile, parseHttpRequest, parseCurlRequest, parsePowerShellRequest, parseFetchRequest, JSONView, copyTextToClipboard, MenuMega, Modal, Notify, Notifications, FileUpload, EditorContent, Input, TextArea, MenuSide, MarkdownViewer, OpenFusionWebsocketClient, ChartWidgets as Chart, AppBase };
+export { Table, types as ColumnTypes, DialogModal, storeChangedTables, WebSocketClient, Predictive as PredictiveInput, Level, Tab, Menu, SlideFullScreen, BasicSelect, EditorCode, sha256, RESTTester, normalizeRequest, resolveUrlAgainstBase, isAbsoluteUrl, serializeRequest, serializeHttp, serializeCurlShell, serializePowerShell, downloadRequestFile, getRequestHeaders, toHeadersObject, REST_EXPORT_FORMATS, AUTH_TYPES, BODY_TYPES, REST_IMPORT_FORMATS, REST_IMPORT_ACCEPT, detectImportFormat, parseRequestFile, parseHttpRequest, parseCurlRequest, parsePowerShellRequest, parseFetchRequest, JSONView, copyTextToClipboard, MenuMega, Modal, Notify, Notifications, FileUpload, EditorContent, Input, TextArea, MenuSide, MarkdownViewer, OpenFusionWebsocketClient, ChartWidgets as Chart, AppBase };

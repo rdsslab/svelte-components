@@ -16,6 +16,8 @@ import SlideFullScreen from './SlideFullScreen/SlideFullScreen.svelte';
 import RESTTester from './RESTTester/index.svelte';
 import {
 	normalizeRequest,
+	resolveUrlAgainstBase,
+	isAbsoluteUrl,
 	serializeRequest,
 	serializeHttp,
 	serializeCurlShell,
@@ -74,6 +76,8 @@ export {
 	sha256,
 	RESTTester,
 	normalizeRequest,
+	resolveUrlAgainstBase,
+	isAbsoluteUrl,
 	serializeRequest,
 	serializeHttp,
 	serializeCurlShell,

@@ -1,7 +1,7 @@
 /**
  * Pruebas de interfaz de RESTTester: menú de exportación, importaciones desde
  * archivo, descargas y envío real de la solicitud contra un servicio público
- * gratuito (postman-echo.com).
+ * gratuito.
  */
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
@@ -9,7 +9,24 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+/**
+ * Origen para el texto de exportación y para rellenar el campo URL: aquí solo
+ * se compara una cadena, nunca se envía nada, así que da igual que el servicio
+ * no conteste.
+ */
 const ECHO = 'https://postman-echo.com';
+
+/**
+ * Destino del envío real. No puede ser postman-echo.com: ahora responde por
+ * detrás de Cloudflare sin ninguna cabecera `Access-Control-Allow-Origin`, ni
+ * en el `OPTIONS` de preflight, así que el navegador rechaza el `fetch`
+ * cross-origin con "Failed to fetch" y no hay forma de distinguirlo de un
+ * fallo de red desde el propio error. El servicio está vivo (responde 200 por
+ * curl y por navegación directa, que no lleva CORS). httpbin.org sí envía
+ * `Access-Control-Allow-Origin`, y `GET`/`POST` llegan comprobados con 200.
+ */
+const ECHO_SEND = 'https://httpbin.org';
+
 const WORK = mkdtempSync(join(tmpdir(), 'resttester-import-'));
 
 /** Escribe un archivo temporal y devuelve la ruta para `setInputFiles`. */
@@ -263,19 +280,19 @@ test.describe('importación desde archivo', () => {
 });
 
 test.describe('envío real desde el navegador', () => {
-	test('POST JSON muestra la respuesta eco de postman-echo', async ({ page }) => {
-		await prepare(page, { url: `${ECHO}/post`, method: 'POST' });
+	test('POST JSON muestra la respuesta eco', async ({ page }) => {
+		await prepare(page, { url: `${ECHO_SEND}/post`, method: 'POST' });
 		await page.getByTestId('resttester-execute').click();
 		// La respuesta sólo se pinta en la pestaña Result.
 		await page.getByRole('tab', { name: 'Result' }).click();
 
-		const respuesta = page.locator('pre', { hasText: 'postman-echo.com' }).first();
+		const respuesta = page.locator('pre', { hasText: 'httpbin.org' }).first();
 		await expect(respuesta).toBeVisible({ timeout: 30_000 });
 		await expect(respuesta).toContainText('/post');
 	});
 
 	test('GET con cabecera propia llega al servidor', async ({ page }) => {
-		await prepare(page, { url: `${ECHO}/get?origen=uitest` });
+		await prepare(page, { url: `${ECHO_SEND}/get?origen=uitest` });
 		await page.getByTestId('resttester-execute').click();
 		await page.getByRole('tab', { name: 'Result' }).click();
 

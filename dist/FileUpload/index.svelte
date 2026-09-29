@@ -9,8 +9,12 @@
 		onupload = () => {},
 		onchange = () => {},
 		showUploadButton = $bindable(true),
-		sizeClass=$bindable('is-small')
+		sizeClass=$bindable('is-small'),
+		...rest
 	} = $props();
+
+	// Clases del input de archivo, igual que hace el Input básico.
+	let inputClass = $derived(`input ${sizeClass} ${rest.class || ''}`);
 
 	let notify = new Notifications();
 	let statusSend = $state(0); // 0 inicial - 1 ok - 2 error
@@ -64,10 +68,11 @@
 	{/if}
 	<p class="control file is-expanded">
 		<input
-			class="input {sizeClass} "
+			class={inputClass}
 			type="file"
 			{multiple}
 			{accept}
+			{...rest}
 			onchange={(event) => {
 				//console.log('>>>> ', event.target.files);
 				statusSend = 0;

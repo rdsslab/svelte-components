@@ -80,7 +80,7 @@
 
 <script>
 	import { onMount, onDestroy } from 'svelte';
-	import { Tab, Table } from '../index.js';
+	import { Tab, Table, Input } from '../index.js';
 	import Query from './key_value/kv.svelte';
 	import Headers from './key_value/kv.svelte';
 	import Auth from './auth.svelte';
@@ -94,6 +94,7 @@
 		toHeadersObject,
 		REST_EXPORT_FORMATS
 	} from './request.js';
+	import { parseRequestFile, REST_IMPORT_ACCEPT } from './importer.js';
 
 	let {
 		url = $bindable(''),
@@ -101,6 +102,7 @@
 		limitSizeResponseView = $bindable(20000),
 		methodDisabled = $bindable(false),
 		showExport = $bindable(true),
+		showImport = $bindable(true),
 		data = $bindable({
 			query: [
 				{
@@ -148,8 +150,8 @@
 	let show_headers = $state(false);
 	let running = $state(false);
 	let elapsed_ms = $state(0);
-	let export_menu_open = $state(false);
 	let export_error = $state('');
+	let import_result = $state(null); // { ok, file, format, method, url, notices, warnings, error }
 	let uF; // current uFetch instance, kept accessible so it can be aborted
 	let timerInterval;
 	//	let sizeKBResponse = $state(0);
@@ -162,8 +164,15 @@
 		{ label: 'HTTP Headers', component: tab_headers },
 		{ label: 'Auth', component: tab_auth },
 		{ label: 'Body', component: tab_body },
+		// La pestaña sólo aparece si hay alguna acción que ofrecer.
+		...(showExport || showImport ? [{ label: 'Import/Export', component: tab_io }] : []),
 		{ label: 'Result', component: tab_result }
 	]);
+
+	// Se resuelve por etiqueta para no depender del índice si se reordenan pestañas.
+	function tabIndex(label) {
+		return tabList.findIndex((tab) => tab.label === label);
+	}
 
 	let last_data = '';
 	let timeoutChangeData;
@@ -408,8 +417,43 @@
 			downloadRequestFile(model, format, { secrets });
 		} catch (error) {
 			export_error = error?.message || String(error);
-		} finally {
-			export_menu_open = false;
+		}
+	}
+
+	/**
+	 * Importa un archivo de solicitud (.http, curl, PowerShell, fetch) y lo vuelca
+	 * en el estado del componente. El texto lo lee el navegador y los parsers son
+	 * puro JS (ver `importer.js`), así que no hay nada pegado en un textarea.
+	 *
+	 * @param {File} file
+	 */
+	async function importRequestFile(file) {
+		if (!file) return;
+		export_error = '';
+
+		try {
+			const result = parseRequestFile(await file.text(), { fileName: file.name });
+
+			url = result.url;
+			method = result.method;
+			data = result.data;
+			internalOnChange();
+
+			import_result = {
+				ok: true,
+				file: file.name,
+				format: result.format,
+				method: result.method,
+				url: result.url,
+				notices: result.notices,
+				warnings: result.warnings
+			};
+		} catch (error) {
+			import_result = {
+				ok: false,
+				file: file.name,
+				error: error?.message || String(error)
+			};
 		}
 	}
 
@@ -529,6 +573,116 @@
 				</div>
 			{/snippet}
 		</svelte:boundary>
+	{/if}
+{/snippet}
+
+{#snippet tab_io()}
+	<div class="columns is-variable is-4">
+		{#if showExport}
+			<div class="column is-half">
+				<h6 class="title is-6">Export</h6>
+				<p class="io_text">
+					Download this request as an HTTP client file (<code>.http</code>), a curl/bash script (<code
+						>.sh</code
+					>) or a PowerShell script (<code>.ps1</code>). Choose whether the secrets stay as
+					environment variables or are written in plain text.
+				</p>
+
+				<p class="io_group_title">With environment variables</p>
+				<div class="buttons">
+					{#each REST_EXPORT_FORMATS as format (format.id)}
+						<button
+							type="button"
+							class="button is-small is-info is-light"
+							data-testid="export-{format.id}-safe"
+							onclick={() => exportRequest(format.id, 'variables')}
+						>
+							{format.label}
+						</button>
+					{/each}
+				</div>
+
+				<p class="io_group_title">With plain text credentials</p>
+				<div class="buttons">
+					{#each REST_EXPORT_FORMATS as format (format.id)}
+						<button
+							type="button"
+							class="button is-small is-info is-light is-outlined"
+							data-testid="export-{format.id}-literal"
+							onclick={() => exportRequest(format.id, 'literal')}
+						>
+							{format.label}
+						</button>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		{#if showImport}
+			<div class="column is-half">
+				<h6 class="title is-6">Import</h6>
+				<p class="io_text">
+					Load a saved request from a file: <code>.http</code> (REST Client, JetBrains, httpyac), a
+					<code>curl</code>/bash command, a PowerShell script or a JavaScript
+					<code>fetch</code>/<code>axios</code> call. The format is detected from the content and fills
+					the URL, method, query, headers, auth and body tabs.
+				</p>
+
+				<div class="io_actions">
+					<Input
+						type="file"
+						label="Import"
+						accept={REST_IMPORT_ACCEPT}
+						showUploadButton={false}
+						data-testid="resttester-import"
+						onselect={({ files }) => importRequestFile(files?.[0])}
+						onchange={(event) => {
+							// Vacía el input para poder volver a elegir el mismo archivo.
+							if (event?.target) event.target.value = '';
+						}}
+					/>
+				</div>
+			</div>
+		{/if}
+	</div>
+
+	{#if export_error}
+		<div class="notification is-danger is-light export_error" data-testid="export-error">
+			{export_error}
+		</div>
+	{/if}
+
+	{#if import_result}
+		<div
+			class="notification is-light import_notice {import_result.ok
+				? import_result.warnings.length || import_result.notices.length
+					? 'is-warning'
+					: 'is-success'
+				: 'is-danger'}"
+			data-testid="import-notice"
+		>
+			{#if import_result.ok}
+				<span class="import_title" data-testid="import-notice-text">
+					{import_result.method}
+					{import_result.url} was imported from {import_result.file}.
+				</span>
+			{:else}
+				<span class="import_title" data-testid="import-notice-text">
+					{import_result.file} could not be imported: {import_result.error}
+				</span>
+			{/if}
+
+			{#if import_result.ok && (import_result.warnings.length || import_result.notices.length)}
+				<ul class="import_list" data-testid="import-notice-list">
+					{#each import_result.warnings as warning, index (index)}
+						<li>{warning}</li>
+					{/each}
+					{#each import_result.notices as notice, index (index)}
+						<li>{notice}</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
 	{/if}
 {/snippet}
 
@@ -735,7 +889,7 @@
 		</div>
 
 		<div class="column">
-			<nav class="level">
+			<nav class="level actions_level">
 				<!-- Right side -->
 				<div class="level-right">
 					<span class="level-item">
@@ -772,76 +926,6 @@
 							</p>
 						</div>
 					</span>
-					{#if showExport}
-						{#if export_menu_open}
-							<!-- svelte-ignore a11y_click_events_have_key_events -->
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<div
-								class="export_backdrop"
-								role="presentation"
-								onclick={() => (export_menu_open = false)}
-							></div>
-						{/if}
-						<span class="level-item">
-							<div class="dropdown is-right" class:is-active={export_menu_open}>
-								<div class="dropdown-trigger">
-									<button
-										class="button is-small is-info is-light"
-										class:is-outlined={!export_menu_open}
-										aria-haspopup="true"
-										aria-expanded={export_menu_open}
-										data-testid="export-toggle"
-										onclick={() => {
-											console.log('DEBUG click toggle');
-											export_error = '';
-											export_menu_open = !export_menu_open;
-											console.log('DEBUG estado', export_menu_open);
-										}}
-									>
-										<span class="icon is-small">
-											<i class="fa-solid fa-file-export"></i>
-										</span>
-										<span>Export</span>
-										<span class="icon is-small">
-											<i class="fa-solid fa-chevron-down"></i>
-										</span>
-									</button>
-								</div>
-								<div class="dropdown-menu">
-									<div class="dropdown-content">
-										<p class="dropdown-item is-size-7 has-text-weight-semibold">
-											Con variables de entorno
-										</p>
-										{#each REST_EXPORT_FORMATS as format (format.id)}
-											<button
-												type="button"
-												class="dropdown-item is-text-left"
-												data-testid="export-{format.id}-safe"
-												onclick={() => exportRequest(format.id, 'variables')}
-											>
-												{format.label}
-											</button>
-										{/each}
-
-										<hr class="dropdown-divider" />
-										<p class="dropdown-item is-size-7 has-text-weight-semibold">
-											Con credenciales (texto plano)
-										</p>
-										{#each REST_EXPORT_FORMATS as format (format.id)}
-											<button
-												type="button"
-												class="dropdown-item is-text-left"
-												data-testid="export-{format.id}-literal"
-												onclick={() => exportRequest(format.id, 'literal')}
-											>
-												{format.label}
-											</button>
-										{/each}
-									</div>
-								</div>
-							</div>
-						</span>
-					{/if}
 					<span class="level-item">
 						<button
 							class="button is-small {running ? 'is-danger' : 'is-success'} is-outlined"
@@ -857,7 +941,7 @@
 									return;
 								}
 
-								active_tab = 4; // Switch to Result tab
+								active_tab = tabIndex('Result'); // Switch to Result tab
 
 								{
 									running = true;
@@ -1000,10 +1084,6 @@
 		</div>
 	</div>
 
-	{#if export_error}
-		<div class="notification is-danger is-light export_error">{export_error}</div>
-	{/if}
-
 	{#if data}
 		<Tab
 			bind:tabs={tabList}
@@ -1030,19 +1110,66 @@
 		margin: 0.25em;
 	}
 
-	.export_backdrop {
-		position: fixed;
-		inset: 0;
-		z-index: 20;
-	}
-
-	.dropdown {
-		z-index: 30;
-	}
-
 	.export_error {
 		margin-top: 0.35rem;
 		padding: 0.5rem 0.75rem;
 		font-size: 0.85rem;
+	}
+
+	.import_notice {
+		margin-top: 0.35rem;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.85rem;
+	}
+
+	.import_title {
+		font-weight: 600;
+	}
+
+	.import_list {
+		margin-top: 0.35rem;
+		margin-left: 1.1rem;
+		list-style: disc;
+	}
+
+	/*
+	 * Bulma fija `flex-shrink: 0` en `.level-left`/`.level-right`, así que los
+	 * controles de la barra no se encogen ni se reparten en varias filas y en
+	 * pantallas pequeñas el botón Execute se iba fuera del área visible.
+	 * Aquí se deja que la columna encoja y que los controles bajen de línea.
+	 */
+	.actions_level > .level-right {
+		flex: 1 1 auto;
+		min-width: 0;
+		flex-wrap: wrap;
+		row-gap: 0.35rem;
+	}
+
+	/* Pestaña Import/Export ---------------------------------------------------- */
+
+	.io_text {
+		margin-bottom: 0.75rem;
+		font-size: 0.9rem;
+		color: var(--bulma-text-weak, #4a4a4a);
+	}
+
+	.io_text code {
+		padding: 0 0.2rem;
+		background: var(--bulma-scheme-main-bis, #f5f5f5);
+		border-radius: 3px;
+		font-size: 0.85rem;
+	}
+
+	.io_group_title {
+		margin-bottom: 0.35rem;
+		font-size: 0.78rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--bulma-text-weak, #4a4a4a);
+	}
+
+	.io_actions {
+		max-width: 32rem;
 	}
 </style>

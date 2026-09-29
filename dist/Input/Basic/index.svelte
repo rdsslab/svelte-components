@@ -103,6 +103,7 @@
 		{onselect}
 		{onupload}
 		bind:showUploadButton
+		{...rest}
 	></FileUpload>
 {:else}
 	<div class="field has-addons">

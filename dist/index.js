@@ -27,6 +27,16 @@ import {
 	AUTH_TYPES,
 	BODY_TYPES
 } from './RESTTester/request.js';
+import {
+	REST_IMPORT_FORMATS,
+	REST_IMPORT_ACCEPT,
+	detectImportFormat,
+	parseRequestFile,
+	parseHttpRequest,
+	parseCurlRequest,
+	parsePowerShellRequest,
+	parseFetchRequest
+} from './RESTTester/importer.js';
 import JSONView from './JSONView/index.svelte';
 import MenuMega from './MenuMega/index.svelte';
 import Modal from './Modal/Modal.svelte';
@@ -74,6 +84,14 @@ export {
 	REST_EXPORT_FORMATS,
 	AUTH_TYPES,
 	BODY_TYPES,
+	REST_IMPORT_FORMATS,
+	REST_IMPORT_ACCEPT,
+	detectImportFormat,
+	parseRequestFile,
+	parseHttpRequest,
+	parseCurlRequest,
+	parsePowerShellRequest,
+	parseFetchRequest,
 	JSONView,
 	copyTextToClipboard,
 	MenuMega,

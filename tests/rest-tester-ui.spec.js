@@ -1,15 +1,46 @@
 /**
- * Pruebas de interfaz de RESTTester: menú de exportación, descargas y envío real
- * de la solicitud contra un servicio público gratuito (postman-echo.com).
+ * Pruebas de interfaz de RESTTester: menú de exportación, importaciones desde
+ * archivo, descargas y envío real de la solicitud contra un servicio público
+ * gratuito (postman-echo.com).
  */
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const ECHO = 'https://postman-echo.com';
+const WORK = mkdtempSync(join(tmpdir(), 'resttester-import-'));
+
+/** Escribe un archivo temporal y devuelve la ruta para `setInputFiles`. */
+function sampleFile(name, content) {
+	const path = join(WORK, name);
+	writeFileSync(path, content, 'utf8');
+	return path;
+}
+
+/**
+ * En desarrollo SvelteKit entrega primero el HTML del servidor y después
+ * descarga el grafo de módulos del cliente: sin esperar a la hidratación los
+ * clics y los cambios de archivo se pierden, porque todavía no hay manejadores.
+ * El botón Execute siempre vive en la barra, así que sirve de señal.
+ */
+async function waitHydrated(page) {
+	await page.waitForLoadState('networkidle');
+	await page.waitForFunction(
+		() =>
+			[...document.querySelectorAll('[data-testid="resttester-execute"]')].some((elemento) =>
+				Object.getOwnPropertySymbols(elemento).some((s) => s.description === 'events')
+			),
+		null,
+		{ timeout: 30_000 }
+	);
+}
 
 async function prepare(page, { url, method = 'GET' } = {}) {
 	await page.goto('/RestTester');
-	await page.getByTestId('export-toggle').waitFor({ state: 'visible' });
+	await page.getByTestId('resttester-execute').waitFor({ state: 'visible' });
+	await waitHydrated(page);
 
 	if (url) {
 		await page.getByPlaceholder('URL').fill(url);
@@ -19,8 +50,17 @@ async function prepare(page, { url, method = 'GET' } = {}) {
 	}
 }
 
+/** Abre la pestaña que aloja los botones de importación y exportación. */
+async function openImportExportTab(page) {
+	const tab = page.getByRole('tab', { name: 'Import/Export' });
+	if ((await tab.getAttribute('aria-selected')) !== 'true') {
+		await tab.click();
+	}
+	await expect(page.getByTestId('resttester-import')).toBeVisible();
+}
+
 async function download(page, testId) {
-	await page.getByTestId('export-toggle').click();
+	await openImportExportTab(page);
 	const [downloadEvent] = await Promise.all([
 		page.waitForEvent('download'),
 		page.getByTestId(testId).click()
@@ -34,31 +74,34 @@ test.beforeEach(async ({ page }) => {
 	page.on('dialog', (dialog) => dialog.accept());
 });
 
-test.describe('menú de exportación', () => {
-	test('abre y cierra el desplegable', async ({ page }) => {
+test.describe('pestaña Import/Export', () => {
+	test('está antes que Result y explica los formatos de cada lado', async ({ page }) => {
 		await prepare(page);
-		const toggle = page.getByTestId('export-toggle');
-		const menu = page.locator('.dropdown.is-active');
 
-		await expect(menu).toHaveCount(0);
-		await toggle.click();
-		await expect(menu).toHaveCount(1);
-		await expect(page.getByTestId('export-http-safe')).toBeVisible();
-		await expect(page.getByTestId('export-curl-safe')).toBeVisible();
-		await expect(page.getByTestId('export-powershell-safe')).toBeVisible();
-		await expect(page.getByTestId('export-http-literal')).toBeVisible();
+		const etiquetas = await page.getByRole('tab').allInnerTexts();
+		const io = etiquetas.indexOf('Import/Export');
+		expect(io).toBeGreaterThan(-1);
+		expect(etiquetas.indexOf('Result')).toBeGreaterThan(io);
 
-		// Clic fuera del menú.
-		await page
-			.locator('h1, body')
-			.first()
-			.click({ position: { x: 5, y: 5 } });
-		await expect(menu).toHaveCount(0);
+		await openImportExportTab(page);
+		await expect(page.getByText('HTTP client file (.http)')).toBeVisible();
+		await expect(page.getByText('curl/bash script (.sh)')).toBeVisible();
+		await expect(page.getByText('PowerShell script (.ps1)')).toBeVisible();
+		await expect(page.getByText('REST Client, JetBrains, httpyac')).toBeVisible();
+		await expect(page.getByText('fetch/axios')).toBeVisible();
+
+		// Los dos grupos de exportación, con sus seis botones.
+		await expect(page.getByText('With environment variables')).toBeVisible();
+		await expect(page.getByText('With plain text credentials')).toBeVisible();
+		for (const formato of ['http', 'curl', 'powershell']) {
+			await expect(page.getByTestId(`export-${formato}-safe`)).toBeVisible();
+			await expect(page.getByTestId(`export-${formato}-literal`)).toBeVisible();
+		}
 	});
 
 	test('avisa si la URL está vacía y no descarga', async ({ page }) => {
 		await prepare(page, { url: '' });
-		await page.getByTestId('export-toggle').click();
+		await openImportExportTab(page);
 		await page.getByTestId('export-http-safe').click();
 
 		await expect(page.getByText('Add a valid URL before exporting.')).toBeVisible();
@@ -94,10 +137,137 @@ test.describe('menú de exportación', () => {
 	});
 });
 
+test.describe('importación desde archivo', () => {
+	test('el input acepta los formatos del importador', async ({ page }) => {
+		await prepare(page);
+		await openImportExportTab(page);
+		const accept = await page.getByTestId('resttester-import').getAttribute('accept');
+		for (const extension of ['.http', '.sh', '.ps1', '.js', '.txt']) {
+			expect(accept).toContain(extension);
+		}
+	});
+
+	// Bulma impide que la barra se encoja o se reparta en varias filas, así que el
+	// botón Execute se salía del área visible en cuanto la fila se llenaba.
+	test('el botón Execute sigue dentro de la pantalla al achicar la ventana', async ({ page }) => {
+		await prepare(page);
+		const execute = page.getByTestId('resttester-execute');
+		await expect(execute).toBeVisible();
+		await expect(execute).toContainText('Execute');
+
+		for (const width of [1600, 1280, 1024, 900]) {
+			await page.setViewportSize({ width, height: 900 });
+			await expect(execute).toBeInViewport();
+		}
+	});
+
+	test('importa un curl del DevTools y llena url, método, query, headers y auth', async ({
+		page
+	}) => {
+		await prepare(page);
+		await openImportExportTab(page);
+		await page
+			.getByTestId('resttester-import')
+			.setInputFiles(
+				sampleFile(
+					'item.txt',
+					[
+						`curl 'https://api.example.com/v1/items?page=2' \\`,
+						`  -H 'authorization: Bearer abc.def' \\`,
+						`  -H 'content-type: application/json' \\`,
+						`  -H 'sec-ch-ua: "Chromium";v="120"' \\`,
+						`  --data-raw '{"name":"nuevo"}'`
+					].join('\n')
+				)
+			);
+
+		// El aviso de importación vive en la pestaña Import/Export, que es la
+		// que queda activa tras cargar el archivo.
+		await expect(page.getByTestId('import-notice-text')).toContainText(
+			'POST https://api.example.com/v1/items was imported'
+		);
+		// Los avisos del importador se listan en la misma notificación.
+		await expect(page.getByTestId('import-notice-list')).toContainText('sec-ch-ua');
+
+		await expect(page.getByPlaceholder('URL')).toHaveValue('https://api.example.com/v1/items');
+		await expect(page.locator('select').first()).toHaveValue('POST');
+
+		// La query de la URL queda en su propia pestaña.
+		await page.getByRole('tab', { name: 'Query Parameters' }).click();
+		await expect(page.getByPlaceholder('Param name').first()).toHaveValue('page');
+		await expect(page.getByPlaceholder('Value').first()).toHaveValue('2');
+
+		// El Authorization va a la pestaña Auth como bearer.
+		await page.getByRole('tab', { name: 'Auth' }).click();
+		await expect(page.getByRole('tab', { name: 'Bearer' })).toHaveAttribute(
+			'aria-selected',
+			'true'
+		);
+		await expect(page.getByPlaceholder('Token')).toHaveValue('abc.def');
+
+		// El cuerpo queda en la pestaña Body con el editor JSON.
+		await page.getByRole('tab', { name: 'Body' }).click();
+		await expect(page.locator('.cm-content').first()).toContainText('"name": "nuevo"');
+	});
+
+	test('importa un archivo .http con variables', async ({ page }) => {
+		await prepare(page);
+		await openImportExportTab(page);
+		await page
+			.getByTestId('resttester-import')
+			.setInputFiles(
+				sampleFile(
+					'api.http',
+					[
+						`@host = https://api.example.com/v2`,
+						``,
+						`GET {{host}}/usuarios?page=1`,
+						`Accept: application/json`
+					].join('\n')
+				)
+			);
+
+		await expect(page.getByPlaceholder('URL')).toHaveValue('https://api.example.com/v2/usuarios');
+		await expect(page.locator('select').first()).toHaveValue('GET');
+
+		// La query se separa en su propia pestaña.
+		await page.getByRole('tab', { name: 'Query Parameters' }).click();
+		await expect(page.getByPlaceholder('Param name').first()).toHaveValue('page');
+		await expect(page.getByPlaceholder('Value').first()).toHaveValue('1');
+	});
+
+	test('un archivo no soportado se avisa sin romper el estado', async ({ page }) => {
+		await prepare(page, { url: `${ECHO}/get` });
+		await openImportExportTab(page);
+		await page
+			.getByTestId('resttester-import')
+			.setInputFiles(sampleFile('notas.md', 'esto no es una petición HTTP\n'));
+
+		await expect(page.getByTestId('import-notice-text')).toContainText('could not be imported');
+		await expect(page.getByPlaceholder('URL')).toHaveValue(`${ECHO}/get`);
+	});
+
+	test('el mismo archivo puede importarse dos veces seguidas', async ({ page }) => {
+		await prepare(page);
+		await openImportExportTab(page);
+		const archivo = sampleFile('doble.http', 'GET https://api.example.com/uno\n');
+		const input = page.getByTestId('resttester-import');
+
+		await input.setInputFiles(archivo);
+		await expect(page.getByPlaceholder('URL')).toHaveValue('https://api.example.com/uno');
+
+		writeFileSync(archivo, 'GET https://api.example.com/dos\n', 'utf8');
+		await input.setInputFiles(archivo);
+		await expect(page.getByPlaceholder('URL')).toHaveValue('https://api.example.com/dos');
+	});
+});
+
 test.describe('envío real desde el navegador', () => {
 	test('POST JSON muestra la respuesta eco de postman-echo', async ({ page }) => {
 		await prepare(page, { url: `${ECHO}/post`, method: 'POST' });
 		await page.getByTestId('resttester-execute').click();
+		// La respuesta sólo se pinta en la pestaña Result.
+		await page.getByRole('tab', { name: 'Result' }).click();
 
 		const respuesta = page.locator('pre', { hasText: 'postman-echo.com' }).first();
 		await expect(respuesta).toBeVisible({ timeout: 30_000 });
@@ -107,6 +277,7 @@ test.describe('envío real desde el navegador', () => {
 	test('GET con cabecera propia llega al servidor', async ({ page }) => {
 		await prepare(page, { url: `${ECHO}/get?origen=uitest` });
 		await page.getByTestId('resttester-execute').click();
+		await page.getByRole('tab', { name: 'Result' }).click();
 
 		const respuesta = page.locator('pre', { hasText: 'origen' }).first();
 		await expect(respuesta).toBeVisible({ timeout: 30_000 });

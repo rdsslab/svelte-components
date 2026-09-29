@@ -61,6 +61,7 @@ const HTTP_METHODS = [
 	'PUT',
 	'DELETE',
 	'PATCH',
+	'QUERY',
 	'HEAD',
 	'OPTIONS',
 	'TRACE',
@@ -1371,7 +1372,7 @@ export function detectImportFormat(text, fileName = '') {
 	}
 
 	// Línea de petición estilo `.http`.
-	if (/^\s*(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|TRACE|CONNECT)\s+\S+/m.test(source)) {
+	if (/^\s*(GET|POST|PUT|DELETE|PATCH|QUERY|HEAD|OPTIONS|TRACE|CONNECT)\s+\S+/m.test(source)) {
 		return 'http';
 	}
 

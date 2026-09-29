@@ -8,6 +8,9 @@
 		{ method: 'POST', label: 'POST' },
 		{ method: 'PATCH', label: 'PATCH' },
 		{ method: 'PUT', label: 'PUT' },
+		// QUERY está en la tabla de métodos del motor (defaultMethods) y lo trata
+		// como método con cuerpo, junto a POST/PUT/PATCH/DELETE.
+		{ method: 'QUERY', label: 'QUERY' },
 		{ method: 'TRACE', label: 'TRACE' }
 	];
 

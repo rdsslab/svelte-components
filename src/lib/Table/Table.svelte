@@ -645,19 +645,19 @@
 	<table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
 		{#if DataTable && DataTable.length > 0}
 			<!-- Table Header -->
-			<thead>
-				<tr class="has-background-link-dark">
-					<th class="has-text-centered has-text-white resizable">#</th>
+			<thead class="table_head">
+				<tr>
+					<th class="has-text-centered">#</th>
 					{#if selectionType == 1}
-						<th class="has-text-centered has-text-white"><span>-</span></th>
+						<th class="has-text-centered"><span>-</span></th>
 					{:else if selectionType == 2}
-						<th class="has-text-centered has-text-white">
+						<th class="has-text-centered">
 							<input type="checkbox" onclick={handleChangeSelectAll} />
 						</th>
 					{/if}
 
 					{#if showEditRow}
-						<th class="has-text-centered has-text-white">
+						<th class="has-text-centered">
 							<i class="fas fa-pen"></i>
 						</th>
 					{/if}
@@ -667,7 +667,7 @@
 							{#if internal_columns[item]}
 								{#if !internal_columns[item].hidden || internal_columns[item].hidden == null}
 									<th
-										class="has-text-centered show_cursor_mouse has-text-white"
+										class="has-text-centered show_cursor_mouse"
 										data-column={item}
 										onclick={HClickHeader}
 									>
@@ -812,8 +812,8 @@
 
 <div class="modal" class:is-active={ShowDialogColumn}>
 	<div class="modal-card">
-		<header class="modal-card-head has-background-dark">
-			<p class="modal-card-title has-text-white">
+		<header class="modal-card-head table_modal_head">
+			<p class="modal-card-title">
 				<b>
 					<span>Columns</span>
 				</b>
@@ -839,7 +839,7 @@
 			</div>
 		</section>
 
-		<footer class="modal-card-foot has-background-dark">
+		<footer class="modal-card-foot table_modal_foot">
 			<button class="button is-success is-small">
 				<span>Accept</span>
 			</button>
@@ -864,17 +864,94 @@
 		margin-left: 0.5em;
 	}
 
+	/* ------------------------------------------------------------------
+	   Encabezado de la tabla.
+
+	   Antes se pintaba con la clase fija de Bulma `has-background-link-dark`,
+	   que resuelve a `--bulma-link-10-l` (8% de luminosidad) y NO rota con el
+	   tema: en modo claro era un azul casi negro sobre caja blanca y en modo
+	   oscuro ese mismo azul casi negro sobre una superficie oscura (contraste
+	   1.16:1 medido), con lo que la banda del encabezado dejaba de leerse.
+
+	   Se resuelve con variables propias que sí cambian de valor: superficie
+	   invertida respecto al tema y texto con la polaridad contraria. Los
+	   objetivos son texto >= 4.5:1 (WCAG 1.4.3) y banda >= 3:1 frente a la
+	   superficie (WCAG 1.4.11); se verifican en tests/table-theme.spec.js.
+	   ------------------------------------------------------------------ */
+	:global(:root) {
+		--table-head-bg: hsl(221, 14%, 21%);
+		--table-head-fg: hsl(221, 14%, 96%);
+		--table-head-hover-bg: hsl(221, 14%, 27%);
+		/* Separador con el cuerpo: contrasta a la vez con el encabezado y con
+		   la primera fila. */
+		--table-head-border: hsl(221, 14%, 35%);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:global(:root) {
+			--table-head-bg: hsl(221, 14%, 91%);
+			--table-head-fg: hsl(221, 14%, 14%);
+			--table-head-hover-bg: hsl(221, 14%, 84%);
+			--table-head-border: hsl(221, 14%, 55%);
+		}
+	}
+
+	/* Bulma resuelve el tema con `prefers-color-scheme` y con `[data-theme]`.
+	   Los selectores de atributo se declaran después del media query para que
+	   una elección explícita del usuario gane siempre a la del sistema. */
+	:global([data-theme='dark']) {
+		--table-head-bg: hsl(221, 14%, 91%);
+		--table-head-fg: hsl(221, 14%, 14%);
+		--table-head-hover-bg: hsl(221, 14%, 84%);
+		--table-head-border: hsl(221, 14%, 55%);
+	}
+
+	:global([data-theme='light']) {
+		--table-head-bg: hsl(221, 14%, 21%);
+		--table-head-fg: hsl(221, 14%, 96%);
+		--table-head-hover-bg: hsl(221, 14%, 27%);
+		--table-head-border: hsl(221, 14%, 35%);
+	}
+
+	.table_head th {
+		background-color: var(--table-head-bg);
+		color: var(--table-head-fg);
+		/* `is-bordered` pinta separadores del color de cada celda, más claros
+		   que el fondo del encabezado, y lo rayaban. El borde inferior se
+		   sustituye por uno propio, visible contra el encabezado y contra el
+		   cuerpo en los dos temas. */
+		border-bottom: 2px solid var(--table-head-border);
+	}
+
+	/* Afordancia visual de las columnas ordenables: hasta ahora solo había
+	   `cursor: pointer`. */
+	.table_head th.show_cursor_mouse:hover,
+	.table_head th.show_cursor_mouse:focus-visible {
+		background-color: var(--table-head-hover-bg);
+	}
+
 	.table_loading_bar {
 		display: flex;
 		align-items: center;
 		gap: 0.5em;
 		padding: 0.4em 0.8em;
-		background-color: #e8f0fe;
-		border-bottom: 1px solid #c0c0c0;
+		background-color: var(--bulma-info-light, #54c6ec);
+		border-bottom: 1px solid var(--bulma-border, #dbdbdb);
 		font-size: 0.85em;
-		color: #1F4E79;
+		color: var(--bulma-info-on-scheme, #1f4e79);
 	}
 	.table_loading_text {
 		font-weight: 500;
+	}
+
+	/* La cabecera del diálogo de columnas tenía el mismo problema que el
+	   encabezado de la tabla. */
+	.modal-card-head.table_modal_head,
+	.modal-card-foot.table_modal_foot {
+		background-color: var(--table-head-bg);
+		color: var(--table-head-fg);
+	}
+	.modal-card-foot .button:not(.is-success) {
+		color: var(--table-head-fg);
 	}
 </style>

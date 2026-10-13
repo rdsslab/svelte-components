@@ -8,8 +8,13 @@
 	import TablePagination from './TablePagination.svelte';
 	import { ExportTableToHTML, ExportTableToXlsx } from './utils/export_data.js';
 	import { checkIsArray, ProcessDataTable } from './utils/utils.js';
+	import {
+		loadColumnPreferences,
+		saveColumnPreferences,
+		clearColumnPreferences,
+		columnPreferencesKey
+	} from './utils/columnPrefs.js';
 
-	//TODO Habilitar mostrar u ocultar columnas
 	//TODO Fijar encabezado
 	//TODO Hacer celdas editables - Parcialmente implementado
 	//TODO Hacer columnas con ancho ajustable
@@ -17,7 +22,7 @@
 	/**
 	 * Configurable properties for the advanced data Table component.
 	 * Supports auto-refresh, pagination, searching, CRUD actions, and server-side fetching.
-	 * 
+	 *
 	 * @typedef {Object} TableProps
 	 * @property {Array<Object>} [RawDataTable] - The local array of data objects to be rendered. Updated automatically if server polling is active.
 	 * @property {number} [selectionType=0] - Defines table selection mode: 0 (None), 1 (Single), 2 (Multiple).
@@ -26,6 +31,9 @@
 	 * @property {boolean} [showEditButton=false] - Whether to render an 'Edit' button in the action bar.
 	 * @property {boolean} [showEditRow=false] - Toggles whether inline row editing is active.
 	 * @property {boolean} [showSelectionButton=true] - Visibility toggle for the row selection mode dropdown.
+	 * @property {boolean} [showColumnsButton=true] - Visibility toggle for the 'Columns' dialog button (lets the user hide/show columns).
+	 * @property {string} [storageKey=''] - Stable identifier used to persist the user's hidden-columns choice in localStorage. When empty, the choice lives only in memory.
+	 * @property {function} [oncolumnschange] - Called with the map of columns hidden by the user every time the choice changes.
 	 * @property {boolean} [showExportButton=true] - Visibility toggle for Export HTML/Excel buttons.
 	 * @property {string} [iconExport='fa-solid fa-file-excel'] - FontAwesome class for the 'Export to Excel' icon.
 	 * @property {string} [iconDeleteRow='fa-solid fa-trash'] - FontAwesome class for the 'Delete row' icon.
@@ -57,6 +65,8 @@
 		showEditButton = $bindable(false),
 		showEditRow = $bindable(false),
 		showSelectionButton = $bindable(true),
+		showColumnsButton = $bindable(true),
+		storageKey = $bindable(''),
 		showExportButton = $bindable(true),
 		iconExport = $bindable('fa-solid fa-file-excel'),
 		iconDeleteRow = $bindable('fa-solid fa-trash'),
@@ -94,6 +104,9 @@
 		},
 		onchangecell = (s) => {
 			//			console.trace('onchangecell no implemented.');
+		},
+		oncolumnschange = (hidden) => {
+			//			console.trace('oncolumnschange no implemented.');
 		}
 	} = $props();
 
@@ -129,6 +142,17 @@
 
 	let orderASC = $state(true);
 	let internal_columns = $state({});
+	// `hidden` tal como lo definió el desarrollador en la prop `columns`. Una
+	// columna oculta por configuración NO es configurable por el usuario (p.ej.
+	// `internal_hash_row`): el override del usuario solo puede ocultar más.
+	let columns_config_hidden = $state({});
+	// Mapa `{ columna: true }` con lo que el usuario ocultó. Es la única parte
+	// que se persiste en el navegador.
+	let user_hidden_columns = $state({});
+	// Columnas que el usuario puede mostrar u ocultar, en orden de aparición.
+	let configurable_columns = $derived(
+		Object.keys(internal_columns).filter((item) => IsColumnConfigurable(item))
+	);
 
 	let idTimeoutDataChanged;
 	let idTimeoutSearch;
@@ -175,6 +199,17 @@
 
 	onMount(() => {
 		timeRemainingToRefresh = 0;
+
+		// Cargar la selección de columnas del usuario. Se hace aquí (y no durante
+		// el render) para evitar desajustes de hidratación en SSR. Si los datos
+		// todavía no han llegado, `SetColumns` volverá a aplicar el override.
+		if (storageKey) {
+			user_hidden_columns = loadColumnPreferences(storageKey);
+			ApplyColumnPreferences();
+			if (typeof window !== 'undefined') {
+				window.addEventListener('storage', HandleStorageEvent);
+			}
+		}
 
 		if (!requestData) {
 			requestData = {
@@ -233,6 +268,7 @@
 		if (RawDataTableIsArray() && RawDataTable.length > 0) {
 			let MaxSizeLabel = 15;
 			internal_columns = {};
+			columns_config_hidden = {};
 
 			Object.keys(RawDataTable[0]).forEach((item) => {
 				if (item === 'internal_hash_row') {
@@ -241,7 +277,8 @@
 						hidden: true
 					};
 				} else if (columns[item]) {
-					internal_columns[item] = columns[item];
+					// Copia superficial: nunca mutamos la prop del consumidor.
+					internal_columns[item] = { ...columns[item] };
 					if (!internal_columns[item].label) {
 						internal_columns[item].label = item.substring(0, MaxSizeLabel);
 					}
@@ -251,8 +288,74 @@
 						hidden: false
 					};
 				}
+
+				columns_config_hidden[item] = internal_columns[item].hidden === true;
 			});
+
+			ApplyColumnPreferences();
 		}
+	}
+
+	/**
+	 * Indica si el usuario puede alternar la columna. Las columnas ocultas por
+	 * configuración (incluida `internal_hash_row`) quedan fuera.
+	 * @param {string} item
+	 * @returns {boolean}
+	 */
+	function IsColumnConfigurable(item) {
+		return item !== 'internal_hash_row' && columns_config_hidden[item] !== true;
+	}
+
+	/**
+	 * Fusiona la selección del usuario sobre `internal_columns`. Se vuelve a
+	 * llamar cada vez que se reconstruyen las columnas (refresco de datos) para
+	 * que el refresco no borre la elección del usuario.
+	 */
+	function ApplyColumnPreferences() {
+		Object.keys(internal_columns).forEach((item) => {
+			if (item === 'internal_hash_row') return;
+			const config_hidden = columns_config_hidden[item] === true;
+			internal_columns[item].hidden = config_hidden || user_hidden_columns[item] === true;
+		});
+	}
+
+	/**
+	 * Oculta o muestra una columna y persiste la elección.
+	 * @param {string} item
+	 */
+	function ToggleColumn(item) {
+		if (!IsColumnConfigurable(item)) return;
+
+		const next_hidden = !internal_columns[item].hidden;
+		const next = { ...user_hidden_columns };
+		if (next_hidden) {
+			next[item] = true;
+		} else {
+			delete next[item];
+		}
+
+		user_hidden_columns = next;
+		ApplyColumnPreferences();
+		saveColumnPreferences(storageKey, user_hidden_columns);
+		oncolumnschange($state.snapshot(user_hidden_columns));
+	}
+
+	/** Restablece la visibilidad por defecto definida por el desarrollador. */
+	function ResetColumns() {
+		user_hidden_columns = {};
+		clearColumnPreferences(storageKey);
+		ApplyColumnPreferences();
+		oncolumnschange($state.snapshot(user_hidden_columns));
+	}
+
+	/**
+	 * Sincroniza la selección cuando otra pestaña del mismo origen la cambia.
+	 * @param {StorageEvent} event
+	 */
+	function HandleStorageEvent(event) {
+		if (event.key !== null && event.key !== columnPreferencesKey(storageKey)) return;
+		user_hidden_columns = loadColumnPreferences(storageKey);
+		ApplyColumnPreferences();
 	}
 
 	function RowIsSelected(internal_hash_row) {
@@ -269,17 +372,25 @@
 			let filteredData = GetSelectedRows();
 			if (filteredData && filteredData.length > 0) {
 				if (type === 'xlsx') {
-					ExportTableToXlsx(filteredData, columns, fileNameExport);
+					ExportTableToXlsx(filteredData, internal_columns, fileNameExport);
 				} else {
-					ExportTableToHTML(filteredData, columns, fileNameExport);
+					ExportTableToHTML(filteredData, internal_columns, fileNameExport);
 				}
-				notify.push({ message: `Exported ${filteredData.length} rows to ${type.toUpperCase()}.`, color: 'success', title: 'Export' });
+				notify.push({
+					message: `Exported ${filteredData.length} rows to ${type.toUpperCase()}.`,
+					color: 'success',
+					title: 'Export'
+				});
 			} else {
 				selectionType = 2;
 				notify.push({ message: 'Select the rows to export.', color: 'warning', title: 'Export' });
 			}
 		} catch (error) {
-			notify.push({ message: 'Export failed: ' + error.message, color: 'danger', title: 'Export Error' });
+			notify.push({
+				message: 'Export failed: ' + error.message,
+				color: 'danger',
+				title: 'Export Error'
+			});
 			console.error(error);
 		}
 	}
@@ -295,6 +406,9 @@
 		clearTimeout(idTimeoutSearch);
 		if (unsubscribeStoreChangedTables) {
 			unsubscribeStoreChangedTables();
+		}
+		if (storageKey && typeof window !== 'undefined') {
+			window.removeEventListener('storage', HandleStorageEvent);
 		}
 	});
 
@@ -362,7 +476,11 @@
 				notify.push({ message: 'Select the rows to delete.', color: 'warning', title: 'Delete' });
 			}
 		} catch (error) {
-			notify.push({ message: 'Delete failed: ' + error.message, color: 'danger', title: 'Delete Error' });
+			notify.push({
+				message: 'Delete failed: ' + error.message,
+				color: 'danger',
+				title: 'Delete Error'
+			});
 			console.error(error);
 		}
 	}
@@ -551,7 +669,11 @@
 					}
 					loading = false;
 				} catch (error) {
-					notify.push({ message: 'Fetch error: ' + error.message, color: 'danger', title: 'Data Error' });
+					notify.push({
+						message: 'Fetch error: ' + error.message,
+						color: 'danger',
+						title: 'Data Error'
+					});
 					loading = false;
 					LastFetchResponse = false;
 				}
@@ -597,6 +719,10 @@
 		selectionType = type;
 	}
 
+	function handleToolbarColumns() {
+		ShowDialogColumn = true;
+	}
+
 	// --- Pagination event handlers ---
 	function handlePageChange(page) {
 		PageSelected = page;
@@ -619,6 +745,7 @@
 	{showEditButton}
 	{showNewButton}
 	{showSelectionButton}
+	{showColumnsButton}
 	bind:selectionType
 	{iconExport}
 	{iconDeleteRow}
@@ -632,6 +759,7 @@
 	onDelete={handleToolbarDelete}
 	onEdit={handleToolbarEdit}
 	onNew={handleToolbarNew}
+	onColumns={handleToolbarColumns}
 	onSelectionTypeChange={handleToolbarSelectionTypeChange}
 />
 
@@ -810,7 +938,7 @@
 	/>
 </div>
 
-<div class="modal" class:is-active={ShowDialogColumn}>
+<div class="modal" class:is-active={ShowDialogColumn} data-testid="table-columns-modal">
 	<div class="modal-card">
 		<header class="modal-card-head table_modal_head">
 			<p class="modal-card-title">
@@ -827,29 +955,42 @@
 			></button>
 		</header>
 		<section class="modal-card-body">
-			<div class="columns">
-				{#each Object.keys(columns) as col}
-					<div class="column">
-						<label class="checkbox">
-							<input type="checkbox" />
-							{col}
-						</label>
-					</div>
-				{/each}
-			</div>
+			{#if configurable_columns.length > 0}
+				<div class="columns is-multiline">
+					{#each configurable_columns as col (col)}
+						<div class="column is-half">
+							<label class="checkbox">
+								<input
+									type="checkbox"
+									checked={!internal_columns[col].hidden}
+									onchange={() => ToggleColumn(col)}
+								/>
+								{internal_columns[col].label}
+							</label>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<div class="has-text-grey is-size-7">No hay columnas configurables.</div>
+			{/if}
 		</section>
 
 		<footer class="modal-card-foot table_modal_foot">
-			<button class="button is-success is-small">
-				<span>Accept</span>
-			</button>
 			<button
 				class="button is-small"
+				onclick={ResetColumns}
+				title="Restablecer columnas por defecto"
+			>
+				<span class="icon is-small"><i class="fas fa-rotate-left"></i></span>
+				<span>Reset</span>
+			</button>
+			<button
+				class="button is-success is-small"
 				onclick={(e) => {
 					ShowDialogColumn = false;
 				}}
 			>
-				<span>Cancel</span>
+				<span>Close</span>
 			</button>
 		</footer>
 	</div>

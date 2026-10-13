@@ -35,6 +35,18 @@ declare const Table: import("svelte").Component<{
      */
     showSelectionButton?: boolean;
     /**
+     * - Visibility toggle for the 'Columns' dialog button (lets the user hide/show columns).
+     */
+    showColumnsButton?: boolean;
+    /**
+     * - Stable identifier used to persist the user's hidden-columns choice in localStorage. When empty, the choice lives only in memory.
+     */
+    storageKey?: string;
+    /**
+     * - Called with the map of columns hidden by the user every time the choice changes.
+     */
+    oncolumnschange?: Function;
+    /**
      * - Visibility toggle for Export HTML/Excel buttons.
      */
     showExportButton?: boolean;
@@ -116,7 +128,7 @@ declare const Table: import("svelte").Component<{
     onchangecell?: Function;
 } & Record<string, any>, {
     GetSelectedRows: () => any[];
-}, "requestData" | "showExportButton" | "showDeleteButton" | "showEditButton" | "showNewButton" | "showSelectionButton" | "selectionType" | "iconExport" | "iconDeleteRow" | "left_items" | "right_items" | "pageSize" | "pageSizeSelected" | "RawDataTable" | "columns" | "showEditRow" | "relatedTablesForAutoRefresh" | "fileNameExport">;
+}, "requestData" | "showExportButton" | "showDeleteButton" | "showEditButton" | "showNewButton" | "showSelectionButton" | "showColumnsButton" | "selectionType" | "iconExport" | "iconDeleteRow" | "left_items" | "right_items" | "pageSize" | "pageSizeSelected" | "RawDataTable" | "columns" | "showEditRow" | "storageKey" | "relatedTablesForAutoRefresh" | "fileNameExport">;
 /**
  * Configurable properties for the advanced data Table component.
  * Supports auto-refresh, pagination, searching, CRUD actions, and server-side fetching.
@@ -150,6 +162,18 @@ type TableProps = {
      * - Visibility toggle for the row selection mode dropdown.
      */
     showSelectionButton?: boolean;
+    /**
+     * - Visibility toggle for the 'Columns' dialog button (lets the user hide/show columns).
+     */
+    showColumnsButton?: boolean;
+    /**
+     * - Stable identifier used to persist the user's hidden-columns choice in localStorage. When empty, the choice lives only in memory.
+     */
+    storageKey?: string;
+    /**
+     * - Called with the map of columns hidden by the user every time the choice changes.
+     */
+    oncolumnschange?: Function;
     /**
      * - Visibility toggle for Export HTML/Excel buttons.
      */

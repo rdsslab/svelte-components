@@ -13,6 +13,7 @@ declare const TableToolbar: import("svelte").Component<{
     showEditButton?: boolean;
     showNewButton?: boolean;
     showSelectionButton?: boolean;
+    showColumnsButton?: boolean;
     selectionType?: number;
     iconExport?: string;
     iconDeleteRow?: string;
@@ -26,6 +27,7 @@ declare const TableToolbar: import("svelte").Component<{
     onDelete?: Function;
     onEdit?: Function;
     onNew?: Function;
+    onColumns?: Function;
     onSelectionTypeChange?: Function;
 }, {}, "selectionType" | "text_search">;
 type $$ComponentProps = {
@@ -38,6 +40,7 @@ type $$ComponentProps = {
     showEditButton?: boolean;
     showNewButton?: boolean;
     showSelectionButton?: boolean;
+    showColumnsButton?: boolean;
     selectionType?: number;
     iconExport?: string;
     iconDeleteRow?: string;
@@ -51,5 +54,6 @@ type $$ComponentProps = {
     onDelete?: Function;
     onEdit?: Function;
     onNew?: Function;
+    onColumns?: Function;
     onSelectionTypeChange?: Function;
 };

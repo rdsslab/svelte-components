@@ -16,6 +16,7 @@
 		showEditButton = false,
 		showNewButton = false,
 		showSelectionButton = true,
+		showColumnsButton = true,
 		selectionType = $bindable(0),
 		iconExport = 'fa-solid fa-file-excel',
 		iconDeleteRow = 'fa-solid fa-trash',
@@ -29,6 +30,7 @@
 		onDelete = () => {},
 		onEdit = () => {},
 		onNew = () => {},
+		onColumns = () => {},
 		onSelectionTypeChange = (type) => {}
 	} = $props();
 </script>
@@ -171,6 +173,22 @@
 	{/if}
 {/snippet}
 
+{#snippet t_columns()}
+	{#if showColumnsButton}
+		<button
+			aria-label="close"
+			class="button is-small"
+			title="Show / hide columns"
+			data-testid="table-columns-button"
+			onclick={onColumns}
+		>
+			<span class="icon">
+				<i class="fas fa-table-columns"></i>
+			</span>
+		</button>
+	{/if}
+{/snippet}
+
 {#snippet t_delete()}
 	{#if showDeleteButton}
 		<button aria-label="close" class="button is-small" title="Delete row" onclick={onDelete}>
@@ -193,12 +211,7 @@
 
 {#snippet t_new()}
 	{#if showNewButton}
-		<button
-			aria-label="close"
-			class="button is-small"
-			title="New row"
-			onclick={() => onNew()}
-		>
+		<button aria-label="close" class="button is-small" title="New row" onclick={() => onNew()}>
 			<span class="icon">
 				<i class="far fa-file"></i>
 			</span>
@@ -215,6 +228,7 @@
 		t_edit,
 		t_delete,
 		t_selection_type,
+		t_columns,
 		t_export_excel,
 		t_export_html,
 		t_search

@@ -6,6 +6,7 @@
 	import { Notifications } from '../class/utils.js';
 	import TableToolbar from './TableToolbar.svelte';
 	import TablePagination from './TablePagination.svelte';
+	import DialogModal from '../Dialog/Modal.svelte';
 	import { ExportTableToHTML, ExportTableToXlsx } from './utils/export_data.js';
 	import { checkIsArray, ProcessDataTable } from './utils/utils.js';
 	import {
@@ -938,63 +939,37 @@
 	/>
 </div>
 
-<div class="modal" class:is-active={ShowDialogColumn} data-testid="table-columns-modal">
-	<div class="modal-card">
-		<header class="modal-card-head table_modal_head">
-			<p class="modal-card-title">
-				<b>
-					<span>Columns</span>
-				</b>
-			</p>
-			<button
-				class="delete"
-				aria-label="close"
-				onclick={(e) => {
-					ShowDialogColumn = false;
-				}}
-			></button>
-		</header>
-		<section class="modal-card-body">
-			{#if configurable_columns.length > 0}
-				<div class="columns is-multiline">
-					{#each configurable_columns as col (col)}
-						<div class="column is-half">
-							<label class="checkbox">
-								<input
-									type="checkbox"
-									checked={!internal_columns[col].hidden}
-									onchange={() => ToggleColumn(col)}
-								/>
-								{internal_columns[col].label}
-							</label>
-						</div>
-					{/each}
-				</div>
-			{:else}
-				<div class="has-text-grey is-size-7">No hay columnas configurables.</div>
-			{/if}
-		</section>
-
-		<footer class="modal-card-foot table_modal_foot">
-			<button
-				class="button is-small"
-				onclick={ResetColumns}
-				title="Restablecer columnas por defecto"
-			>
-				<span class="icon is-small"><i class="fas fa-rotate-left"></i></span>
-				<span>Reset</span>
-			</button>
-			<button
-				class="button is-success is-small"
-				onclick={(e) => {
-					ShowDialogColumn = false;
-				}}
-			>
-				<span>Close</span>
-			</button>
-		</footer>
-	</div>
-</div>
+<DialogModal
+	bind:show={ShowDialogColumn}
+	label_accept="Close"
+	label_cancel="Reset"
+	onaccept={() => (ShowDialogColumn = false)}
+	oncancel={ResetColumns}
+>
+	{#snippet title()}
+		<span>Columns</span>
+	{/snippet}
+	{#snippet body()}
+		{#if configurable_columns.length > 0}
+			<div class="columns is-multiline">
+				{#each configurable_columns as col (col)}
+					<div class="column is-half">
+						<label class="checkbox">
+							<input
+								type="checkbox"
+								checked={!internal_columns[col].hidden}
+								onchange={() => ToggleColumn(col)}
+							/>
+							{internal_columns[col].label}
+						</label>
+					</div>
+				{/each}
+			</div>
+		{:else}
+			<div class="has-text-grey is-size-7">No hay columnas configurables.</div>
+		{/if}
+	{/snippet}
+</DialogModal>
 
 <style>
 	.show_cursor_mouse {
@@ -1083,16 +1058,5 @@
 	}
 	.table_loading_text {
 		font-weight: 500;
-	}
-
-	/* La cabecera del diálogo de columnas tenía el mismo problema que el
-	   encabezado de la tabla. */
-	.modal-card-head.table_modal_head,
-	.modal-card-foot.table_modal_foot {
-		background-color: var(--table-head-bg);
-		color: var(--table-head-fg);
-	}
-	.modal-card-foot .button:not(.is-success) {
-		color: var(--table-head-fg);
 	}
 </style>

@@ -54,10 +54,12 @@ A powerful data table with sorting, filtering, pagination, and export capabiliti
   - Automatic column generation or custom column configuration.
   - Sorting (including robust boolean/null handling).
   - Filtering and Search.
-  - Export to Excel (.xlsx) and HTML.
+  - Export to Excel (.xlsx) and HTML (only the visible columns are exported).
   - Inline editing support.
   - Pagination.
-- **Props**: `RawDataTable`, `columns`, `selectionType`, `pageSize`.
+  - User-managed column visibility: the user can hide/show columns from the toolbar and the choice is persisted per-browser in `localStorage`.
+- **Props**: `RawDataTable`, `columns`, `selectionType`, `pageSize`, `storageKey`, `showColumnsButton`, `oncolumnschange`.
+- **Column persistence**: set `storageKey` to a stable per-table identifier (e.g. `storageKey="usuarios"`) to persist the user's hidden columns across sessions. Columns hidden by configuration in `columns` (including the internal `internal_hash_row`) are never exposed to the user; the toolbar offers a "Reset" action to restore the developer defaults.
 
 #### `Chart`
 Wrapper around Apache ECharts for rendering responsive charts.

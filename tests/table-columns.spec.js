@@ -54,7 +54,9 @@ test.describe('Table - columnas configurables por el usuario', () => {
 		const box = page.locator('.box').first();
 		return {
 			button: box.getByTestId('table-columns-button'),
-			modal: box.getByTestId('table-columns-modal')
+			// `DialogModal` hereda `role="dialog"` del `Modal` base; los modales
+			// cerrados quedan `display:none` y fuera del árbol de accesibilidad.
+			modal: box.getByRole('dialog')
 		};
 	}
 
@@ -68,7 +70,7 @@ test.describe('Table - columnas configurables por el usuario', () => {
 
 		const { button, modal } = firstTable();
 		await button.click();
-		await expect(modal).toHaveClass(/is-active/);
+		await expect(modal).toBeVisible();
 
 		await modal.getByLabel('Salario').uncheck();
 		await expect(salaryHeader()).toHaveCount(0);
@@ -99,7 +101,7 @@ test.describe('Table - columnas configurables por el usuario', () => {
 	test('el modal no ofrece columnas ocultas por configuración', async () => {
 		const { button, modal } = firstTable();
 		await button.click();
-		await expect(modal).toHaveClass(/is-active/);
+		await expect(modal).toBeVisible();
 
 		await expect(modal.getByLabel('Nombre')).toBeVisible();
 		await expect(modal.getByLabel('internal_hash_row')).toHaveCount(0);

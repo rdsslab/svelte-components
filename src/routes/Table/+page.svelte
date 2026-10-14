@@ -109,6 +109,7 @@
 			bind:RawDataTable={localData}
 			columns={localColumns}
 			selectionType={2}
+			storageKey="demo-table-local"
 			showNewButton={true}
 			showEditButton={true}
 			showDeleteButton={true}

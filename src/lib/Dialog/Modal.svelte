@@ -6,9 +6,11 @@
 	 * @typedef {Object} DialogModalProps
 	 * @property {boolean} [show=false] - Boolean state to control whether the dialog is open or strictly hidden.
 	 * @property {import('svelte').Snippet} [title] - Svelte snippet used to render the card's top header/title text.
-	 * @property {function(Event): void} [oncancel] - Function executed when the 'x' button or 'CANCEL' button is clicked.
+	 * @property {function(Event): void} [oncancel] - Function executed only when the 'CANCEL' button is clicked. The 'x' button never triggers it.
 	 * @property {function(Event): void} [onaccept] - Function executed when the 'ACCEPT' button is clicked.
+	 * @property {function(Event): void} [onclose] - Function executed when the 'x' button is clicked, after the dialog is closed. Optional; the 'x' only closes.
 	 * @property {import('svelte').Snippet} [body] - Svelte snippet used to render the main body logic and text.
+	 * @property {import('svelte').Snippet} [footer] - Optional snippet with extra footer buttons, rendered before the accept/cancel buttons.
 	 * @property {string} [label_accept='ACCEPT'] - Text label shown on the primary accept button.
 	 * @property {string} [label_cancel='CANCEL'] - Text label shown on the secondary cancel button.
 	 * @property {boolean} [closeOnEscape=true] - Whether the modal closes when Escape is pressed.
@@ -21,7 +23,9 @@
 		title,
 		oncancel,
 		onaccept,
+		onclose,
 		body,
+		footer,
 		label_accept = 'ACCEPT',
 		label_cancel = 'CANCEL',
 		closeOnEscape = true,
@@ -42,8 +46,8 @@
 				aria-label="close"
 				onclick={(e) => {
 					show = false;
-					if (oncancel) {
-						oncancel(e);
+					if (onclose) {
+						onclose(e);
 					}
 				}}
 			></button>
@@ -52,6 +56,7 @@
 			{@render body?.()}
 		</section>
 		<footer class="modal-card-foot has-background-dark">
+			{@render footer?.()}
 			<button
 				class="button is-success is-small"
 				onclick={(e) => {

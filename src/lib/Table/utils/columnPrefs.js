@@ -11,6 +11,8 @@
  * tabla.
  */
 
+import { sha256 } from '../../class/sha.js';
+
 /** Prefijo de las claves para no colisionar con otras apps del mismo origen. */
 const STORAGE_PREFIX = 'sc:table';
 /** Versión del formato; permite migrar el esquema en el futuro. */
@@ -105,5 +107,55 @@ export function clearColumnPreferences(tableKey) {
 		localStorage.removeItem(columnPreferencesKey(tableKey));
 	} catch (error) {
 		console.warn('[Table] No se pudieron borrar las preferencias de columnas:', error);
+	}
+}
+
+/**
+ * Construye una clave automática y estable para una tabla que no recibió
+ * `storageKey`. Se apoya en la ruta actual y en la firma de sus columnas, de
+ * modo que dos tablas con columnas distintas obtengan claves distintas.
+ *
+ * Límite conocido: dos tablas con la MISMA firma de columnas y en la misma
+ * ruta comparten clave. En ese caso conviene definir `storageKey` explícito
+ * (el registro de claves activas avisa por consola de la colisión).
+ *
+ * @param {string} path - Ruta de la página (p.ej. `location.pathname`).
+ * @param {Iterable<string>} columnNames - Nombres de las columnas.
+ * @returns {string} Clave de tabla con el prefijo `auto:`.
+ */
+export function autoColumnPreferencesKey(path, columnNames) {
+	const signature = [...(columnNames || [])].sort().join('|');
+	const digest = sha256(signature || 'columns').slice(0, 12);
+	return `auto:${path || ''}:${digest}`;
+}
+
+/** Claves de tabla actualmente montadas, para detectar colisiones. */
+const activeKeys = new Set();
+
+/**
+ * Registra una clave activa y avisa si otra tabla ya la está usando. En una
+ * misma pestaña el evento `storage` no se dispara, así que dos tablas con la
+ * misma clave se pisarían silenciosamente; este aviso lo hace visible.
+ * @param {string} tableKey
+ */
+export function registerActiveColumnPreferencesKey(tableKey) {
+	if (!tableKey) return;
+	if (activeKeys.has(tableKey)) {
+		console.warn(
+			`[Table] La storageKey "${tableKey}" ya está en uso por otra tabla montada. ` +
+				'Las preferencias de columnas colisionarán; asigne una storageKey distinta por tabla.'
+		);
+		return;
+	}
+	activeKeys.add(tableKey);
+}
+
+/**
+ * Libera una clave registrada al desmontar la tabla.
+ * @param {string} tableKey
+ */
+export function unregisterActiveColumnPreferencesKey(tableKey) {
+	if (tableKey) {
+		activeKeys.delete(tableKey);
 	}
 }

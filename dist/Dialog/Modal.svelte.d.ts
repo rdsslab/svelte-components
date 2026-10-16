@@ -13,7 +13,7 @@ declare const Modal: import("svelte").Component<{
      */
     title?: import("svelte").Snippet;
     /**
-     * - Function executed when the 'x' button or 'CANCEL' button is clicked.
+     * - Function executed only when the 'CANCEL' button is clicked. The 'x' button never triggers it.
      */
     oncancel?: (arg0: Event) => void;
     /**
@@ -21,9 +21,17 @@ declare const Modal: import("svelte").Component<{
      */
     onaccept?: (arg0: Event) => void;
     /**
+     * - Function executed when the 'x' button is clicked, after the dialog is closed. Optional; the 'x' only closes.
+     */
+    onclose?: (arg0: Event) => void;
+    /**
      * - Svelte snippet used to render the main body logic and text.
      */
     body?: import("svelte").Snippet;
+    /**
+     * - Optional snippet with extra footer buttons, rendered before the accept/cancel buttons.
+     */
+    footer?: import("svelte").Snippet;
     /**
      * - Text label shown on the primary accept button.
      */
@@ -55,7 +63,7 @@ type DialogModalProps = {
      */
     title?: import("svelte").Snippet;
     /**
-     * - Function executed when the 'x' button or 'CANCEL' button is clicked.
+     * - Function executed only when the 'CANCEL' button is clicked. The 'x' button never triggers it.
      */
     oncancel?: (arg0: Event) => void;
     /**
@@ -63,9 +71,17 @@ type DialogModalProps = {
      */
     onaccept?: (arg0: Event) => void;
     /**
+     * - Function executed when the 'x' button is clicked, after the dialog is closed. Optional; the 'x' only closes.
+     */
+    onclose?: (arg0: Event) => void;
+    /**
      * - Svelte snippet used to render the main body logic and text.
      */
     body?: import("svelte").Snippet;
+    /**
+     * - Optional snippet with extra footer buttons, rendered before the accept/cancel buttons.
+     */
+    footer?: import("svelte").Snippet;
     /**
      * - Text label shown on the primary accept button.
      */

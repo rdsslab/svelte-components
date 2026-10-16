@@ -160,6 +160,8 @@
 			Dataset de <strong>250 registros</strong>. El checkbox "select all" en el encabezado selecciona
 			<strong>TODOS</strong> los registros de todas las paginas usando <code>Set</code> (O(1) por busqueda).
 			Prueba seleccionar todo y luego exportar a Excel para ver los estilos zebra.
+			Esta tabla <strong>no</strong> define <code>storageKey</code>: usa una clave automatica y la
+			seleccion de columnas <strong>persiste por defecto</strong>.
 		</p>
 
 		<Table

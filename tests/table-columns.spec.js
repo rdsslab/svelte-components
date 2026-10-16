@@ -106,4 +106,91 @@ test.describe('Table - columnas configurables por el usuario', () => {
 		await expect(modal.getByLabel('Nombre')).toBeVisible();
 		await expect(modal.getByLabel('internal_hash_row')).toHaveCount(0);
 	});
+
+	test('cerrar con la X solo cierra: no borra la preferencia', async () => {
+		const { button, modal } = firstTable();
+		await button.click();
+		await expect(modal).toBeVisible();
+
+		await modal.getByLabel('Salario').uncheck();
+		await expect(salaryHeader()).toHaveCount(0);
+
+		// La X de la cabecera NO debe comportarse como "Reset".
+		await modal.getByLabel('close').click();
+		await expect(modal).toBeHidden();
+
+		await expect(salaryHeader()).toHaveCount(0);
+		await expect
+			.poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY))
+			.toContain('salary');
+
+		// Y sobrevive a una recarga.
+		await page.reload();
+		await page.getByTestId('table-columns-button').first().waitFor({ state: 'visible' });
+		await waitHydrated(page);
+		await expect(page.locator('table.table thead th').first()).toBeVisible();
+		await expect(salaryHeader()).toHaveCount(0);
+	});
+
+	test('cerrar con "Accept" conserva la selección', async () => {
+		const { button, modal } = firstTable();
+		await button.click();
+		await expect(modal).toBeVisible();
+
+		await modal.getByLabel('Salario').uncheck();
+		await modal.locator('footer.modal-card-foot button', { hasText: 'Accept' }).click();
+		await expect(modal).toBeHidden();
+
+		await expect(salaryHeader()).toHaveCount(0);
+		await expect
+			.poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY))
+			.toContain('salary');
+	});
+
+	test('"Hide all" oculta todas las columnas configurables y persiste', async () => {
+		const { button, modal } = firstTable();
+		await button.click();
+		await expect(modal).toBeVisible();
+
+		await modal.getByTestId('table-hide-all-columns').click();
+
+		await expect(page.locator('table.table thead th', { hasText: 'Nombre' })).toHaveCount(0);
+		await expect(salaryHeader()).toHaveCount(0);
+
+		const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY);
+		expect(stored).toContain('name');
+		expect(stored).toContain('salary');
+
+		// Y sobrevive a una recarga.
+		await page.reload();
+		await page.getByTestId('table-columns-button').first().waitFor({ state: 'visible' });
+		await waitHydrated(page);
+		await expect(page.locator('table.table thead th').first()).toBeVisible();
+		await expect(page.locator('table.table thead th', { hasText: 'Nombre' })).toHaveCount(0);
+	});
+
+	test('sin storageKey la persistencia es automática (demo 3)', async () => {
+		const box = page.locator('.box').nth(2);
+		const header = box.locator('table.table thead th', { hasText: 'salary' });
+		await expect(header).toHaveCount(1);
+
+		await box.getByTestId('table-columns-button').click();
+		const modal = box.getByRole('dialog');
+		await expect(modal).toBeVisible();
+
+		await modal.getByLabel('salary').uncheck();
+		await expect(header).toHaveCount(0);
+
+		// Se guardó bajo una clave automática (no había `storageKey`).
+		const autoKeys = await page.evaluate(() =>
+			Object.keys(localStorage).filter((key) => key.includes(':auto:'))
+		);
+		expect(autoKeys.length).toBeGreaterThan(0);
+
+		await page.reload();
+		await page.getByTestId('table-columns-button').first().waitFor({ state: 'visible' });
+		await waitHydrated(page);
+		await page.locator('table.table thead th').first().waitFor({ state: 'visible' });
+		await expect(box.locator('table.table thead th', { hasText: 'salary' })).toHaveCount(0);
+	});
 });

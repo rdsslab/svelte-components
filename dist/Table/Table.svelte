@@ -1,5 +1,5 @@
 <script>
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 	import uFetch from '@rdsslab/uFetch';
 	import { Auto } from './Column/DefaultTypes.js';
 	import { storeChangedTables } from '../class/websocket.js';
@@ -13,7 +13,10 @@
 		loadColumnPreferences,
 		saveColumnPreferences,
 		clearColumnPreferences,
-		columnPreferencesKey
+		columnPreferencesKey,
+		autoColumnPreferencesKey,
+		registerActiveColumnPreferencesKey,
+		unregisterActiveColumnPreferencesKey
 	} from './utils/columnPrefs.js';
 
 	//TODO Fijar encabezado
@@ -33,7 +36,8 @@
 	 * @property {boolean} [showEditRow=false] - Toggles whether inline row editing is active.
 	 * @property {boolean} [showSelectionButton=true] - Visibility toggle for the row selection mode dropdown.
 	 * @property {boolean} [showColumnsButton=true] - Visibility toggle for the 'Columns' dialog button (lets the user hide/show columns).
-	 * @property {string} [storageKey=''] - Stable identifier used to persist the user's hidden-columns choice in localStorage. When empty, the choice lives only in memory.
+	 * @property {boolean} [persistColumns=true] - When true (default), the hidden-columns choice is persisted in localStorage. Set to false to keep it in memory only.
+	 * @property {string} [storageKey=''] - Stable, unique identifier used to persist the user's hidden-columns choice in localStorage. When empty, a stable automatic key derived from the route and the column set is used (requires persistColumns=true). Define it explicitly when two tables share the same column names.
 	 * @property {function} [oncolumnschange] - Called with the map of columns hidden by the user every time the choice changes.
 	 * @property {boolean} [showExportButton=true] - Visibility toggle for Export HTML/Excel buttons.
 	 * @property {string} [iconExport='fa-solid fa-file-excel'] - FontAwesome class for the 'Export to Excel' icon.
@@ -67,6 +71,7 @@
 		showEditRow = $bindable(false),
 		showSelectionButton = $bindable(true),
 		showColumnsButton = $bindable(true),
+		persistColumns = $bindable(true),
 		storageKey = $bindable(''),
 		showExportButton = $bindable(true),
 		iconExport = $bindable('fa-solid fa-file-excel'),
@@ -150,10 +155,17 @@
 	// Mapa `{ columna: true }` con lo que el usuario ocultó. Es la única parte
 	// que se persiste en el navegador.
 	let user_hidden_columns = $state({});
+	// Clave de tabla activa (explícita o automática) y la clave registrada para
+	// detectar colisiones entre varias tablas montadas.
+	let activeStorageKey = $state('');
+	let registeredKey = '';
 	// Columnas que el usuario puede mostrar u ocultar, en orden de aparición.
 	let configurable_columns = $derived(
 		Object.keys(internal_columns).filter((item) => IsColumnConfigurable(item))
 	);
+	// Clave de persistencia resuelta (explícita o automática). Reacciona a
+	// cambios de `storageKey`, `persistColumns` y del conjunto de columnas.
+	let resolved_storage_key = $derived(ResolveStorageKey());
 
 	let idTimeoutDataChanged;
 	let idTimeoutSearch;
@@ -162,6 +174,17 @@
 	$effect(() => {
 		RawDataTable;
 		onrawDataChanged();
+	});
+
+	// Si el consumidor cambia `storageKey`/`persistColumns` en caliente, o si la
+	// clave automática cambia al conocerse las columnas, se vuelve a resolver y
+	// se recarga la preferencia. `untrack` evita depender de `internal_columns`.
+	$effect(() => {
+		const key = resolved_storage_key;
+		untrack(() => {
+			ApplyStorageKey(key);
+			ApplyColumnPreferences();
+		});
 	});
 
 	function requestDataExists() {
@@ -203,12 +226,24 @@
 
 		// Cargar la selección de columnas del usuario. Se hace aquí (y no durante
 		// el render) para evitar desajustes de hidratación en SSR. Si los datos
-		// todavía no han llegado, `SetColumns` volverá a aplicar el override.
-		if (storageKey) {
-			user_hidden_columns = loadColumnPreferences(storageKey);
-			ApplyColumnPreferences();
-			if (typeof window !== 'undefined') {
-				window.addEventListener('storage', HandleStorageEvent);
+		// todavía no han llegado, `SetColumns` resolverá la clave automática y
+		// volverá a aplicar el override.
+		ApplyStorageKey(ResolveStorageKey());
+		ApplyColumnPreferences();
+		if (typeof window !== 'undefined') {
+			window.addEventListener('storage', HandleStorageEvent);
+
+			if (showColumnsButton) {
+				if (!persistColumns) {
+					console.warn(
+						'[Table] showColumnsButton está activo pero persistColumns=false: la selección de columnas no se guardará.'
+					);
+				} else if (!storageKey) {
+					console.info(
+						'[Table] Persistencia de columnas con clave automática. ' +
+							'Defina "storageKey" para una clave estable y única por tabla.'
+					);
+				}
 			}
 		}
 
@@ -293,6 +328,9 @@
 				columns_config_hidden[item] = internal_columns[item].hidden === true;
 			});
 
+			// La clave automática depende de las columnas: se resuelve aquí,
+			// cuando ya se conocen, antes de aplicar la selección del usuario.
+			ApplyStorageKey(ResolveStorageKey());
 			ApplyColumnPreferences();
 		}
 	}
@@ -305,6 +343,51 @@
 	 */
 	function IsColumnConfigurable(item) {
 		return item !== 'internal_hash_row' && columns_config_hidden[item] !== true;
+	}
+
+	/**
+	 * Determina la clave de persistencia a usar. Orden de precedencia:
+	 *  1. `persistColumns = false` → sin persistencia.
+	 *  2. `storageKey` explícita → se usa tal cual.
+	 *  3. Clave automática estable a partir de la ruta y la firma de columnas.
+	 *
+	 * Se prefiere la configuración `columns` del desarrollador (estable) y se
+	 * cae a las columnas reales de los datos solo si no hay configuración.
+	 * @returns {string}
+	 */
+	function ResolveStorageKey() {
+		if (!persistColumns) return '';
+		if (storageKey) return storageKey;
+
+		const configured = columns ? Object.keys(columns) : [];
+		const source = configured.length > 0 ? configured : Object.keys(internal_columns);
+		if (source.length === 0) return '';
+
+		const path = typeof window !== 'undefined' ? window.location.pathname : '';
+		return autoColumnPreferencesKey(path, source);
+	}
+
+	/**
+	 * Activa la clave de persistencia actual cuando cambia (por cambio de prop
+	 * o porque las columnas se conocieron después). Carga las preferencias y
+	 * registra la clave para avisar de colisiones.
+	 * @param {string} key
+	 */
+	function ApplyStorageKey(key) {
+		if (key === activeStorageKey) return;
+
+		if (registeredKey) {
+			unregisterActiveColumnPreferencesKey(registeredKey);
+			registeredKey = '';
+		}
+
+		activeStorageKey = key;
+
+		if (key) {
+			registerActiveColumnPreferencesKey(key);
+			registeredKey = key;
+			user_hidden_columns = loadColumnPreferences(key);
+		}
 	}
 
 	/**
@@ -337,15 +420,34 @@
 
 		user_hidden_columns = next;
 		ApplyColumnPreferences();
-		saveColumnPreferences(storageKey, user_hidden_columns);
+		saveColumnPreferences(activeStorageKey, user_hidden_columns);
 		oncolumnschange($state.snapshot(user_hidden_columns));
 	}
 
 	/** Restablece la visibilidad por defecto definida por el desarrollador. */
 	function ResetColumns() {
 		user_hidden_columns = {};
-		clearColumnPreferences(storageKey);
+		clearColumnPreferences(activeStorageKey);
 		ApplyColumnPreferences();
+		oncolumnschange($state.snapshot(user_hidden_columns));
+	}
+
+	/**
+	 * Oculta TODAS las columnas configurables de una vez y persiste la
+	 * elección. Pensado para tablas con muchas columnas: vaciar y luego marcar
+	 * solo las necesarias.
+	 */
+	function HideAllColumns() {
+		if (configurable_columns.length === 0) return;
+
+		const next = {};
+		for (const col of configurable_columns) {
+			next[col] = true;
+		}
+
+		user_hidden_columns = next;
+		ApplyColumnPreferences();
+		saveColumnPreferences(activeStorageKey, user_hidden_columns);
 		oncolumnschange($state.snapshot(user_hidden_columns));
 	}
 
@@ -354,8 +456,9 @@
 	 * @param {StorageEvent} event
 	 */
 	function HandleStorageEvent(event) {
-		if (event.key !== null && event.key !== columnPreferencesKey(storageKey)) return;
-		user_hidden_columns = loadColumnPreferences(storageKey);
+		if (!activeStorageKey) return;
+		if (event.key !== null && event.key !== columnPreferencesKey(activeStorageKey)) return;
+		user_hidden_columns = loadColumnPreferences(activeStorageKey);
 		ApplyColumnPreferences();
 	}
 
@@ -408,7 +511,11 @@
 		if (unsubscribeStoreChangedTables) {
 			unsubscribeStoreChangedTables();
 		}
-		if (storageKey && typeof window !== 'undefined') {
+		if (registeredKey) {
+			unregisterActiveColumnPreferencesKey(registeredKey);
+			registeredKey = '';
+		}
+		if (typeof window !== 'undefined') {
 			window.removeEventListener('storage', HandleStorageEvent);
 		}
 	});
@@ -941,13 +1048,25 @@
 
 <DialogModal
 	bind:show={ShowDialogColumn}
-	label_accept="Close"
+	label_accept="Accept"
 	label_cancel="Reset"
 	onaccept={() => (ShowDialogColumn = false)}
 	oncancel={ResetColumns}
 >
 	{#snippet title()}
 		<span>Columns</span>
+	{/snippet}
+	{#snippet footer()}
+		<button
+			class="button is-warning is-small mr-auto"
+			title="Hide all columns"
+			data-testid="table-hide-all-columns"
+			disabled={configurable_columns.length === 0}
+			onclick={HideAllColumns}
+		>
+			<span class="icon is-small"><i class="fas fa-eye-slash"></i></span>
+			<span>Hide all</span>
+		</button>
 	{/snippet}
 	{#snippet body()}
 		{#if configurable_columns.length > 0}
@@ -966,7 +1085,7 @@
 				{/each}
 			</div>
 		{:else}
-			<div class="has-text-grey is-size-7">No hay columnas configurables.</div>
+			<div class="has-text-grey is-size-7">No configurable columns.</div>
 		{/if}
 	{/snippet}
 </DialogModal>

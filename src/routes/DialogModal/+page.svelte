@@ -9,115 +9,135 @@
 	let showDisabledClose = $state(false);
 
 	function handleAccept() {
-		notify.push({ title: 'Aceptado', message: 'El usuario aceptó la acción.', color: 'success' });
+		notify.push({ title: 'Accepted', message: 'The user accepted the action.', color: 'success' });
 		showConfirm = false;
 	}
 
 	function handleCancel() {
-		notify.push({ title: 'Cancelado', message: 'El usuario canceló la acción.', color: 'info' });
+		notify.push({ title: 'Cancelled', message: 'The user cancelled the action.', color: 'info' });
 		showConfirm = false;
 	}
 </script>
 
 <h2 class="title is-4">DialogModal</h2>
-<p class="subtitle is-6">Ejemplos de uso del componente Modal y DialogModal</p>
+<p class="subtitle is-6">Usage examples of the Modal and DialogModal components</p>
 
 <div class="buttons">
-	<button class="button is-link" onclick={() => (showConfirm = true)}>Confirmar acción</button>
-	<button class="button is-info" onclick={() => (showCustom = true)}>Modal personalizado</button>
-	<button class="button is-dark" onclick={() => (showBasic = true)}>Modal básico</button>
-	<button class="button is-warning" onclick={() => (showDisabledClose = true)}>Sin cierre externo</button>
+	<button class="button is-link" onclick={() => (showConfirm = true)}>Confirm action</button>
+	<button class="button is-info" onclick={() => (showCustom = true)}>Custom modal</button>
+	<button class="button is-dark" onclick={() => (showBasic = true)}>Basic modal</button>
+	<button class="button is-warning" onclick={() => (showDisabledClose = true)}
+		>No outside close</button
+	>
 </div>
 
-<!-- DialogModal: Confirmación -->
+<!-- DialogModal: confirmation -->
 <DialogModal bind:show={showConfirm} onaccept={handleAccept} oncancel={handleCancel}>
-	{#snippet title()}¿Confirmar?{/snippet}
+	{#snippet title()}Confirm?{/snippet}
 	{#snippet body()}
-		<p>Esta acción no se puede deshacer. ¿Deseas continuar?</p>
+		<p>This action cannot be undone. Do you want to continue?</p>
 	{/snippet}
 </DialogModal>
 
-<!-- DialogModal: Personalizado -->
+<!-- DialogModal: custom, with an extra footer button -->
 <DialogModal
 	bind:show={showCustom}
-	label_accept="Guardar"
-	label_cancel="Cerrar"
+	label_accept="Save"
+	label_cancel="Close"
 	onaccept={() => {
-		notify.push({ title: 'Guardado', message: 'Los cambios se guardaron correctamente.', color: 'success' });
+		notify.push({ title: 'Saved', message: 'Changes were saved.', color: 'success' });
 		showCustom = false;
 	}}
 	oncancel={() => (showCustom = false)}
+	onclose={() =>
+		notify.push({
+			title: 'Closed',
+			message: 'The X button only closed the dialog.',
+			color: 'info'
+		})}
 >
-	{#snippet title()}Configuración{/snippet}
+	{#snippet title()}Configuration{/snippet}
+	{#snippet footer()}
+		<button
+			class="button is-small is-warning mr-auto"
+			onclick={() => notify.push({ title: 'Info', message: 'Extra footer button.', color: 'info' })}
+		>
+			Extra action
+		</button>
+	{/snippet}
 	{#snippet body()}
 		<div class="field">
-			<label class="label">Nombre</label>
+			<label class="label">Name</label>
 			<div class="control">
-				<input class="input" type="text" placeholder="Escribe un nombre" />
+				<input class="input" type="text" placeholder="Type a name" />
 			</div>
 		</div>
 		<div class="field">
 			<label class="label">Email</label>
 			<div class="control">
-				<input class="input" type="email" placeholder="email@ejemplo.com" />
+				<input class="input" type="email" placeholder="email@example.com" />
 			</div>
 		</div>
 	{/snippet}
 </DialogModal>
 
-<!-- Modal básico -->
+<!-- Basic modal -->
 <Modal bind:show={showBasic}>
 	<div class="modal-card">
 		<header class="modal-card-head has-background-dark">
-			<p class="modal-card-title has-text-white"><b>Información</b></p>
+			<p class="modal-card-title has-text-white"><b>Information</b></p>
 			<button class="delete" aria-label="close" onclick={() => (showBasic = false)}></button>
 		</header>
 		<section class="modal-card-body">
-			<p>Este es un <b>Modal</b> básico usando el componente base.</p>
-			<p class="mt-2">Puedes poner cualquier contenido aquí.</p>
+			<p>This is a basic <b>Modal</b> using the base component.</p>
+			<p class="mt-2">You can put any content here.</p>
 		</section>
 		<footer class="modal-card-foot has-background-dark">
-			<button class="button is-success is-small" onclick={() => (showBasic = false)}>Entendido</button>
+			<button class="button is-success is-small" onclick={() => (showBasic = false)}>Got it</button>
 		</footer>
 	</div>
 </Modal>
 
-<!-- Sin cierre externo -->
+<!-- No outside close -->
 <DialogModal
 	bind:show={showDisabledClose}
 	closeOnBackground={false}
 	closeOnEscape={false}
-	label_accept="Entendido"
+	label_accept="Got it"
 	onaccept={() => (showDisabledClose = false)}
 >
-	{#snippet title()}Atención{/snippet}
+	{#snippet title()}Attention{/snippet}
 	{#snippet body()}
-		<p>Este modal <b>no se cierra</b> al hacer click fuera o presionar Escape.</p>
-		<p class="mt-2">Solo se puede cerrar con los botones.</p>
+		<p>This modal <b>does not close</b> when clicking outside or pressing Escape.</p>
+		<p class="mt-2">It can only be closed through its buttons.</p>
 	{/snippet}
 </DialogModal>
 
 <div class="box mt-5">
 	<h3 class="title is-5">API</h3>
-<pre><code>{'import { DialogModal, Modal } from \'$lib/index.js\';'}
+	<pre><code
+			>{"import { DialogModal, Modal } from '$lib/index.js';"}
 
-{'<!-- DialogModal: wrapper con footer -->'}
+{'<!-- DialogModal: wrapper with footer -->'}
 {'<DialogModal'}
   {'bind:show={open}'}
   {'onaccept={() => ...}'}
-  {'oncancel={() => ...}'}
-  {'label_accept="Aceptar"'}
-  {'label_cancel="Cancelar"'}
+  {'oncancel={() => ...}'}{'   <!-- CANCEL button only -->'}
+  {'onclose={() => ...}'}{'    <!-- X button, closes only -->'}
+  {'label_accept="Accept"'}
+  {'label_cancel="Cancel"'}
   {'closeOnEscape={true}'}
   {'closeOnBackground={true}'}{'>'}
-  {'{#snippet title()}Título{/snippet}'}
-  {'{#snippet body()}Contenido{/snippet}'}
+  {'{#snippet title()}Title{/snippet}'}
+  {'{#snippet footer()}Extra buttons here{/snippet}'}
+  {'{#snippet body()}Content{/snippet}'}
 {'</DialogModal>'}
 
-{'<!-- Modal: componente base -->'}
+{'<!-- Modal: base component -->'}
 {'<Modal bind:show={open} closeOnEscape closeOnBackground>'}
-  {'...contenido personalizado...'}
-{'</Modal>'}</code></pre>
+  {'...custom content...'}
+{'</Modal>'}</code
+		></pre>
 </div>
 
 <Notify />

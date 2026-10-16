@@ -39,7 +39,11 @@ declare const Table: import("svelte").Component<{
      */
     showColumnsButton?: boolean;
     /**
-     * - Stable identifier used to persist the user's hidden-columns choice in localStorage. When empty, the choice lives only in memory.
+     * - When true (default), the hidden-columns choice is persisted in localStorage. Set to false to keep it in memory only.
+     */
+    persistColumns?: boolean;
+    /**
+     * - Stable, unique identifier used to persist the user's hidden-columns choice in localStorage. When empty, a stable automatic key derived from the route and the column set is used (requires persistColumns=true). Define it explicitly when two tables share the same column names.
      */
     storageKey?: string;
     /**
@@ -128,7 +132,7 @@ declare const Table: import("svelte").Component<{
     onchangecell?: Function;
 } & Record<string, any>, {
     GetSelectedRows: () => any[];
-}, "requestData" | "showExportButton" | "showDeleteButton" | "showEditButton" | "showNewButton" | "showSelectionButton" | "showColumnsButton" | "selectionType" | "iconExport" | "iconDeleteRow" | "left_items" | "right_items" | "pageSize" | "pageSizeSelected" | "RawDataTable" | "columns" | "showEditRow" | "storageKey" | "relatedTablesForAutoRefresh" | "fileNameExport">;
+}, "requestData" | "showExportButton" | "showDeleteButton" | "showEditButton" | "showNewButton" | "showSelectionButton" | "showColumnsButton" | "selectionType" | "iconExport" | "iconDeleteRow" | "left_items" | "right_items" | "pageSize" | "pageSizeSelected" | "columns" | "RawDataTable" | "showEditRow" | "persistColumns" | "storageKey" | "relatedTablesForAutoRefresh" | "fileNameExport">;
 /**
  * Configurable properties for the advanced data Table component.
  * Supports auto-refresh, pagination, searching, CRUD actions, and server-side fetching.
@@ -167,7 +171,11 @@ type TableProps = {
      */
     showColumnsButton?: boolean;
     /**
-     * - Stable identifier used to persist the user's hidden-columns choice in localStorage. When empty, the choice lives only in memory.
+     * - When true (default), the hidden-columns choice is persisted in localStorage. Set to false to keep it in memory only.
+     */
+    persistColumns?: boolean;
+    /**
+     * - Stable, unique identifier used to persist the user's hidden-columns choice in localStorage. When empty, a stable automatic key derived from the route and the column set is used (requires persistColumns=true). Define it explicitly when two tables share the same column names.
      */
     storageKey?: string;
     /**

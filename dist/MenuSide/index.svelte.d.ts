@@ -13,7 +13,7 @@ declare const Index: import("svelte").Component<{
     menu?: any[];
 }, {
     toggleSidebar: () => void;
-}, "menu" | "logoText" | "logoIcon" | "isMobile" | "sidebarState">;
+}, "menu" | "logoText" | "logoIcon" | "sidebarState" | "isMobile">;
 type $$ComponentProps = {
     logoText?: string;
     logoIcon?: () => ReturnType<import("svelte").Snippet>;

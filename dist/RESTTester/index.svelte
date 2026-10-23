@@ -227,13 +227,69 @@
 		return '';
 	}
 
+	/**
+	 * Un resultado vacío no debe pisar el último guardado: al remontar el
+	 * componente (o al cambiar de pestaña en el editor) se emitía
+	 * `{data:'', sizeKBResponse:-1}` y el editor lo persistía como respuesta
+	 * válida. Solo se considera utilizable si hay cuerpo o tamaño real.
+	 */
+	function hasUsableResult(result) {
+		if (!result) return false;
+		if (result.error) return true;
+		const hasData = result.data !== undefined && result.data !== null && result.data !== '';
+		const size = Number(result.sizeKBResponse);
+		return hasData || (Number.isFinite(size) && size > 0);
+	}
+
+	/**
+	 * Recupera la última respuesta guardada en `data.last_response`. Así el
+	 * panel Result no aparece vacío cuando el editor reabre el endpoint o
+	 * cuando el componente se remonta.
+	 */
+	function hydrateFromData() {
+		const saved = data?.last_response;
+		if (!saved || typeof saved !== 'object') return;
+
+		const savedSize = Number(saved.sizeKBResponse);
+		const hasData = saved.data !== undefined && saved.data !== null && saved.data !== '';
+		if (!hasData && !(Number.isFinite(savedSize) && savedSize > 0)) return;
+
+		const contentType = saved.MimeType || saved.contentType || '';
+
+		data_result = {
+			data: saved.data ?? '',
+			contentType,
+			sizeKBResponse: Number.isFinite(savedSize) ? savedSize : -1,
+			fileExtension: saved.fileExtension ?? getExtensionFromContentType(contentType),
+			fileName: saved.fileName
+		};
+
+		if (saved.status != null) {
+			last_response = {
+				ok: saved.status >= 200 && saved.status < 300,
+				status: saved.status,
+				statusText: saved.statusText || ''
+			};
+		}
+	}
+
 	function internalOnChange() {
 		//	last_data = {...data};
+		const resultToEmit = hasUsableResult(data_result)
+			? {
+					...data_result,
+					// Compatibilidad: el editor histórico guarda/lee `MimeType`.
+					MimeType: data_result.contentType ?? data_result.MimeType ?? '',
+					status: last_response?.status ?? data_result.status ?? null,
+					statusText: last_response?.statusText ?? data_result.statusText ?? ''
+				}
+			: (data?.last_response ?? null);
+
 		const data_to_emit = {
 			data: { ...data },
 			url: $state.snapshot(url),
 			method: $state.snapshot(method),
-			last_response: data_result
+			last_response: resultToEmit
 		};
 
 		let new_data = JSON.stringify(data_to_emit);
@@ -500,11 +556,21 @@
 
 	onMount(() => {
 		defaultValues();
+		hydrateFromData();
 	});
 
 	onDestroy(() => {
 		clearTimeout(timeoutChangeData);
 		clearInterval(timerInterval);
+		// Si el editor se cierra con una solicitud en vuelo, no dejamos la
+		// petición huérfana (el fetch seguiría vivo sin componente que la lea).
+		if (running && uF) {
+			try {
+				uF.abort('RESTTester destroyed');
+			} catch (error) {
+				console.error(error);
+			}
+		}
 	});
 </script>
 
@@ -1102,6 +1168,8 @@
 									}
 
 									running = false;
+									// Persistir el resultado (o el error) al terminar.
+									internalOnChange();
 								}
 							}}
 						>

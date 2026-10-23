@@ -41,6 +41,10 @@ declare const Tab: import("svelte").Component<{
          * - Optional alias passed to the onselect callback.
          */
         alias?: string;
+        /**
+         * - Keep the content mounted (hidden) after its first activation. Useful for tabs with in-flight state (requests, timers, form drafts) that must survive tab switches.
+         */
+        keepAlive?: boolean;
     }[];
     active?: number;
     children?: import("svelte").Snippet;
@@ -66,4 +70,8 @@ type TabItem = {
      * - Optional alias passed to the onselect callback.
      */
     alias?: string;
+    /**
+     * - Keep the content mounted (hidden) after its first activation. Useful for tabs with in-flight state (requests, timers, form drafts) that must survive tab switches.
+     */
+    keepAlive?: boolean;
 };

@@ -6,6 +6,8 @@
 	let activeDisabled = $state(1);
 	let activeEvent = $state(0);
 	let lastEvent = $state(null);
+	let activeKeepAlive = $state(0);
+	let keepAliveCounter = $state(0);
 
 	function onTabSelect(e) {
 		lastEvent = e;
@@ -52,14 +54,18 @@
 
 	{#snippet searchContent()}
 		<div class="notification is-info is-light">
-			<p><strong class="has-text-info"><i class="fa-solid fa-magnifying-glass"></i> Buscar</strong></p>
+			<p>
+				<strong class="has-text-info"><i class="fa-solid fa-magnifying-glass"></i> Buscar</strong>
+			</p>
 			<p>Contenido del tab de búsqueda.</p>
 		</div>
 	{/snippet}
 
 	{#snippet settingsContent()}
 		<div class="notification is-warning is-light">
-			<p><strong class="has-text-warning"><i class="fa-solid fa-gear"></i> Configuración</strong></p>
+			<p>
+				<strong class="has-text-warning"><i class="fa-solid fa-gear"></i> Configuración</strong>
+			</p>
 			<p>Contenido del tab de configuración.</p>
 		</div>
 	{/snippet}
@@ -96,7 +102,9 @@
 
 	{#snippet reportsContent()}
 		<div class="notification is-primary is-light">
-			<p><strong class="has-text-primary"><i class="fa-solid fa-file-lines"></i> Reportes</strong></p>
+			<p>
+				<strong class="has-text-primary"><i class="fa-solid fa-file-lines"></i> Reportes</strong>
+			</p>
 			<p>Generación y visualización de reportes.</p>
 		</div>
 	{/snippet}
@@ -255,9 +263,51 @@
 		]}
 	>
 		<div class="notification is-dark is-light mt-3">
-			<p><i class="fa-solid fa-circle-info"></i> Este contenido se renderiza debajo de todos los tabs (children snippet).</p>
+			<p>
+				<i class="fa-solid fa-circle-info"></i> Este contenido se renderiza debajo de todos los tabs (children
+				snippet).
+			</p>
 		</div>
 	</Tab>
+</div>
+
+<!-- ============================================================ -->
+<!-- Ejemplo 8: keepAlive (estado persistente) -->
+<!-- ============================================================ -->
+<div class="box" data-testid="tab-keepalive-demo">
+	<h3 class="title is-5">keepAlive: conservar estado al cambiar de pestaña</h3>
+	<p class="mb-3">
+		La pestaña <code>Contador</code> declara <code>keepAlive: true</code>: su contenido se monta la
+		primera vez y permanece oculto, conservando el estado. <code>Otra</code> no lo declara y se desmonta
+		al salir.
+	</p>
+
+	{#snippet keepAliveCounterContent()}
+		<div data-testid="keepalive-counter-panel">
+			<button
+				class="button is-small is-primary"
+				data-testid="keepalive-increment"
+				onclick={() => keepAliveCounter++}
+			>
+				Incrementar
+			</button>
+			<span class="ml-3"
+				>Valor: <strong data-testid="keepalive-counter-value">{keepAliveCounter}</strong></span
+			>
+		</div>
+	{/snippet}
+
+	{#snippet keepAliveOtherContent()}
+		<div data-testid="keepalive-other-panel">Contenido sin keepAlive.</div>
+	{/snippet}
+
+	<Tab
+		bind:active={activeKeepAlive}
+		tabs={[
+			{ label: 'Contador', component: keepAliveCounterContent, keepAlive: true },
+			{ label: 'Otra', component: keepAliveOtherContent }
+		]}
+	/>
 </div>
 
 <!-- ============================================================ -->

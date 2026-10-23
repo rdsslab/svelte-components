@@ -6,6 +6,7 @@
 	 * @property {boolean} [disabled=false] - Whether the tab is disabled.
 	 * @property {import('svelte').Snippet} [component] - Snippet rendered as tab content.
 	 * @property {string} [alias] - Optional alias passed to the onselect callback.
+	 * @property {boolean} [keepAlive=false] - Keep the content mounted (hidden) after its first activation. Useful for tabs with in-flight state (requests, timers, form drafts) that must survive tab switches.
 	 */
 
 	/** @type {{ classSize?: string, onselect?: (e: {label: string, index: number, alias?: string}) => void, tabs?: TabItem[], active?: number, children?: import('svelte').Snippet }} & Record<string, any> */
@@ -18,11 +19,26 @@
 	} = $props();
 
 	let tabRefs = $state([]);
+	/**
+	 * Tabs `keepAlive` que ya se mostraron alguna vez. Se guardan por clave
+	 * estable (alias/label) y no por índice: el consumidor puede filtrar o
+	 * reordenar `tabs` y los índices cambiarían. Así el contenido nunca visitado
+	 * sigue siendo lazy y el ya montado conserva su estado.
+	 */
+	let visitedTabs = $state({});
+
+	function keepAliveKey(tab, index) {
+		return tab.alias ?? tab.label ?? String(index);
+	}
+
+	$effect(() => {
+		const current = active;
+		const tab = tabs[current];
+		if (tab) visitedTabs[keepAliveKey(tab, current)] = true;
+	});
 
 	function handleKeydown(e, index) {
-		const enabled = tabs
-			.map((t, i) => ({ t, i }))
-			.filter(({ t }) => !t.disabled);
+		const enabled = tabs.map((t, i) => ({ t, i })).filter(({ t }) => !t.disabled);
 
 		const currentEnabledIdx = enabled.findIndex(({ i }) => i === index);
 		if (currentEnabledIdx === -1) return;
@@ -68,10 +84,7 @@
 <div class="tabs is-boxed {classSize} tab-margin" role="tablist" aria-label="Tabs">
 	<ul>
 		{#each tabs as item, i (i)}
-			<li
-				class={active === i ? 'is-active' : ''}
-				role="presentation"
-			>
+			<li class={active === i ? 'is-active' : ''} role="presentation">
 				<a
 					bind:this={tabRefs[i]}
 					role="tab"
@@ -106,11 +119,13 @@
 </div>
 
 {#each tabs as tab, i (i)}
-	{#if tab.component && active === i && !tab.disabled}
+	{#if tab.component && !tab.disabled && (active === i || (tab.keepAlive && visitedTabs[keepAliveKey(tab, i)]))}
 		<div
 			id="tabpanel-{i}"
 			role="tabpanel"
 			aria-labelledby="tab-{i}"
+			aria-hidden={active !== i}
+			style:display={active === i ? 'block' : 'none'}
 		>
 			{@render tab.component()}
 		</div>

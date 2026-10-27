@@ -29,12 +29,16 @@ declare const BasicSelect: import("svelte").Component<{
      */
     css_class?: string;
     /**
+     * - Disables the select control.
+     */
+    disabled?: boolean;
+    /**
      * - Callback triggered when the user selection changes, receives the selected value.
      */
     onselect?: (arg0: {
         value: any;
     }) => void;
-} & Record<string, any>, {}, "options" | "option" | "label" | "isExpanded" | "css_class">;
+} & Record<string, any>, {}, "options" | "option" | "label" | "isExpanded" | "disabled" | "css_class">;
 /**
  * Represents the parameters supported by the BasicSelect component.
  */
@@ -63,6 +67,10 @@ type BasicSelectProps = {
      * - CSS class to apply for styling, specifically related to sizing in Bulma (e.g., 'is-small', 'is-normal').
      */
     css_class?: string;
+    /**
+     * - Disables the select control.
+     */
+    disabled?: boolean;
     /**
      * - Callback triggered when the user selection changes, receives the selected value.
      */

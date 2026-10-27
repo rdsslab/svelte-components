@@ -8,6 +8,7 @@
 	 * @property {string|number|any} [option=''] - The currently selected option value. Bound bidirectionally.
 	 * @property {Array<{id: string|number, value: string, enabled?: boolean}>} [options=[{ id: 'TEST', value: 'TEST', enabled: true }]] - An array of objects representing the select options.
 	 * @property {string} [css_class=' is-small '] - CSS class to apply for styling, specifically related to sizing in Bulma (e.g., 'is-small', 'is-normal').
+	 * @property {boolean} [disabled=false] - Disables the select control.
 	 * @property {function({value: any}): void} [onselect] - Callback triggered when the user selection changes, receives the selected value.
 	 */
 
@@ -18,6 +19,7 @@
 		option = $bindable(''),
 		options = $bindable([{ id: 'TEST', value: `TEST`, enabled: true }]),
 		css_class = $bindable(' is-small '),
+		disabled = $bindable(false),
 		onselect = (s) => {
 			//	console.log('onselect not implemented');
 		}
@@ -38,7 +40,7 @@
 
 	<p class="control {isExpanded ? 'is-expanded' : ''}">
 		<span class="select {css_class}">
-			<select bind:value={option} onchange={handleClick}>
+			<select bind:value={option} onchange={handleClick} {disabled}>
 				{#if options && Array.isArray(options)}
 					{#each options as h}
 						<option value={h.id}>

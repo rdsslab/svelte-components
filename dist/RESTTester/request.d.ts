@@ -23,9 +23,7 @@ export function resolveUrlAgainstBase(url: string, base?: string): {
 /**
  * Construye el modelo de solicitud a partir del estado actual de RESTTester.
  *
- * @param {{url?: string, method?: string, data?: Record<string, any>, baseUrl?: string}} options
- * @param {string} [options.baseUrl]  Base para absolutizar una URL relativa. Si no se
- *   pasa, la URL se queda como está (y se avisa) porque no hay forma de saber el host.
+ * @param {{url?: string, method?: string, data?: Record<string, any>, baseUrl?: string}} options  Base para absolutizar una URL relativa. Si no se pasa, la URL se queda como está.
  * @returns {RestRequest}
  */
 export function normalizeRequest({ url, method, data, baseUrl }?: {
@@ -161,6 +159,7 @@ export type RestRequest = {
         mime: string | null;
         fields: RestField[];
         hasFiles: boolean;
+        hasBody?: boolean;
     };
     warnings: string[];
     notices: string[];

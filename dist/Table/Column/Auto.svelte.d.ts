@@ -10,6 +10,7 @@ declare const Auto: import("svelte").Component<{
     editInline?: boolean;
     css_cell: any;
     onchangecell: any;
+    custom: any;
 }, {}, "value" | "row">;
 type $$ComponentProps = {
     value?: any;
@@ -18,4 +19,5 @@ type $$ComponentProps = {
     editInline?: boolean;
     css_cell: any;
     onchangecell: any;
+    custom: any;
 };

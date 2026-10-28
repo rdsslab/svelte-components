@@ -16,8 +16,8 @@ export class OpenFusionWebsocketClient extends EventTarget {
     /** @type {WebSocket|null} */
     ws: WebSocket | null;
     retryCount: number;
-    heartbeatTimer: number;
-    pongTimeoutTimer: number;
+    heartbeatTimer: NodeJS.Timeout;
+    pongTimeoutTimer: NodeJS.Timeout;
     /**
      * Emits a custom event on this EventTarget instance.
      *

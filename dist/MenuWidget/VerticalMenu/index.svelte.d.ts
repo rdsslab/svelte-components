@@ -4,8 +4,8 @@ type Index = {
     $set?(props: Partial<$$ComponentProps>): void;
 };
 declare const Index: import("svelte").Component<{
-    open?: any;
+    open?: boolean;
 }, {}, "">;
 type $$ComponentProps = {
-    open?: any;
+    open?: boolean;
 };

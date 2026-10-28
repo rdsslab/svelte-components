@@ -1,5 +1,9 @@
 <script>
-	let { left, right } = $props();
+	/**
+	 * @param {Array<() => import('svelte').Snippet> | null} left - Snippets para la columna izquierda.
+	 * @param {Array<() => import('svelte').Snippet> | null} right - Snippets para la columna derecha.
+	 */
+	let { left = null, right = null } = $props();
 </script>
 
 <nav class="nav_margin">
@@ -53,7 +57,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: flex-end;
-		
+
 		gap: 0.2rem;
 	}
 

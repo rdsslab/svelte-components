@@ -177,6 +177,6 @@
 		margin-right: -0.3rem;
 	}
 	.navbar-dropdown {
-		padding-bottom: 0.0rem;
+		padding-bottom: 0rem;
 	}
 </style>

@@ -19,7 +19,6 @@
 	setInterval(() => {
 		value = 'hola3';
 	}, 5000);
-
 </script>
 
 <PredictiveInput
@@ -35,4 +34,3 @@
 ></PredictiveInput>
 
 {value}
-

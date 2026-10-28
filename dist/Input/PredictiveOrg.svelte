@@ -110,7 +110,7 @@
 							on:keydown={handleKeyDown}
 						/>
 						<span class="icon is-small is-right">
-							<i class="fa-solid fa-chevron-down" ></i>
+							<i class="fa-solid fa-chevron-down"></i>
 						</span>
 					</span>
 

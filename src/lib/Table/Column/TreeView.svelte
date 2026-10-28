@@ -19,7 +19,7 @@
 	}
 </script>
 
-<td onclick={onclick_cell} class={css_cell}>
+<td onclick={(e) => onclick_cell(e)} class={css_cell}>
 	{#if value && typeof value === 'object'}
 		<details class="tree-root">
 			<summary>

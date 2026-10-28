@@ -17,7 +17,7 @@ declare const Index: import("svelte").Component<{
     sizeClass?: string;
 } & Record<string, any>, {
     uploadFile: () => Promise<any>;
-}, "label" | "sizeClass" | "accept" | "showUploadButton">;
+}, "label" | "accept" | "showUploadButton" | "sizeClass">;
 type $$ComponentProps = {
     label?: any;
     accept?: string;

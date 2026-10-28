@@ -152,6 +152,7 @@
 	let time_responde = $state();
 	let response_as = $state('json');
 	let active_tab = $state(0);
+	/** @type {{ data: any; sizeKBResponse: number; contentType?: string; fileExtension?: string; fileName?: string; error?: string; MimeType?: string; status?: number; statusText?: string; }} */
 	let data_result = $state({ data: '', sizeKBResponse: -1 });
 	let request_headers = $state([]);
 	let response_headers = $state([]);
@@ -391,7 +392,7 @@
 
 	/**
 	 * Obtiene el tamaño de la respuesta en kilobytes (KB) desde el header Content-Length.
-	 * @param {Response} response - El objeto Response de fetch.
+	 * @param {string} contentLength - El valor del header Content-Length.
 	 * @returns {number|null} El tamaño en KB (redondeado a 2 decimales) o null si no se puede obtener.
 	 */
 	function getResponseSizeInKB(contentLength) {
@@ -590,7 +591,7 @@
 						<span class="icon has-text-warning">
 							<i class="fa-solid fa-triangle-exclamation"></i>
 						</span>
-						<span>{error.message}</span>
+						<span>{error instanceof Error ? error.message : String(error)}</span>
 					</span>
 				</div>
 			{/snippet}
@@ -613,7 +614,7 @@
 						<span class="icon has-text-warning">
 							<i class="fa-solid fa-triangle-exclamation"></i>
 						</span>
-						<span>{error.message}</span>
+						<span>{error instanceof Error ? error.message : String(error)}</span>
 					</span>
 				</div>
 			{/snippet}
@@ -637,7 +638,7 @@
 						<span class="icon has-text-warning">
 							<i class="fa-solid fa-triangle-exclamation"></i>
 						</span>
-						<span>{error.message}</span>
+						<span>{error instanceof Error ? error.message : String(error)}</span>
 					</span>
 				</div>
 			{/snippet}
@@ -662,7 +663,7 @@
 						<span class="icon has-text-warning">
 							<i class="fa-solid fa-triangle-exclamation"></i>
 						</span>
-						<span>{error.message}</span>
+						<span>{error instanceof Error ? error.message : String(error)}</span>
 					</span>
 				</div>
 			{/snippet}

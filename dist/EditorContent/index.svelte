@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import Level from '../Level/Level.svelte';
-//	import { on } from 'events';
+	//	import { on } from 'events';
 
 	let {
 		readOnly = $bindable(true),
@@ -11,11 +11,11 @@
 		urlUploadImages = undefined
 	} = $props();
 
-    let editor;
+	let editor;
 	let editorEl;
 
-	$effect(async () => {
-		await setContent(content);
+	$effect(() => {
+		setContent(content).catch(() => {});
 	});
 
 	export async function setContent(content_json) {
@@ -47,8 +47,9 @@
 			const InlineCode = (await import('@editorjs/inline-code')).default;
 			const Checklist = (await import('@editorjs/checklist')).default;
 
-	//		console.log('EditorJS', content);
+			//		console.log('EditorJS', content);
 			//			const { default: Header } = await import('@editorjs/header');
+			// @ts-ignore - EditorJS constructor types
 			editor = new EditorJS({
 				holder: editorEl,
 				placeholder: 'Write...',
@@ -84,28 +85,28 @@
 	});
 </script>
 
-<Level right={[readOnly_Button]}>
-	{#snippet readOnly_Button()}
-		{#if readOnlyButton}
-			<button
-				class="button is-small {readOnly ? 'is-danger' : 'is-success'}  is-outlined"
-				onclick={() => {
-					readOnly = !readOnly;
-					setreadOnly(readOnly);
-				}}
-			>
-				<span class="icon is-small">
-					{#if readOnly}
-						<i class="fa-solid fa-ban"></i>
-					{:else}
-						<i class="fa-solid fa-pen"></i>
-					{/if}
-				</span>
-				<span>Read Only</span>
-			</button>
-		{/if}
-	{/snippet}
-</Level>
+{#snippet readOnly_Button()}
+	{#if readOnlyButton}
+		<button
+			class="button is-small {readOnly ? 'is-danger' : 'is-success'}  is-outlined"
+			onclick={() => {
+				readOnly = !readOnly;
+				setreadOnly(readOnly);
+			}}
+		>
+			<span class="icon is-small">
+				{#if readOnly}
+					<i class="fa-solid fa-ban"></i>
+				{:else}
+					<i class="fa-solid fa-pen"></i>
+				{/if}
+			</span>
+			<span>Read Only</span>
+		</button>
+	{/if}
+{/snippet}
+
+<Level right={[readOnly_Button]}></Level>
 
 <div class="content">
 	<div bind:this={editorEl} class="w-full h-full"></div>

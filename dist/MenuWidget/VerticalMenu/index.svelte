@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
-	let { open = bind(true) } = $props();
+	let { open = true } = $props();
 
 	let mySidenav;
 
@@ -69,23 +69,26 @@
 
 	<aside class="menu">
 		{#each Menu as L1, index}
-
-		
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-			<p class="menu-label" title="{L1.title}" onclick={() => {
-				// Handle click event
-				Menu[index].isopen = true;
-				console.log('Clicked on', L1.title, Menu[index].isopen);
-			//	alert(`Clicked on ${L1.isopen}`);
-			}}>
-				<span class="icon-text" >
+			<p
+				class="menu-label"
+				title={L1.title}
+				onclick={() => {
+					// Handle click event
+					Menu[index].isopen = true;
+					console.log('Clicked on', L1.title, Menu[index].isopen);
+					//	alert(`Clicked on ${L1.isopen}`);
+				}}
+			>
+				<span class="icon-text">
 					<span class="icon">
-						<i class={L1.icon}></i> {L1.isopen} {Menu[index].isopen}
+						<i class={L1.icon}></i>
+						{L1.isopen}
+						{Menu[index].isopen}
 					</span>
 					{#if open}
 						<span>{L1.title}</span>
-
 					{/if}
 				</span>
 			</p>
@@ -140,6 +143,4 @@
 		font-size: 36px;
 		margin-left: 50px;
 	}
-
-
 </style>

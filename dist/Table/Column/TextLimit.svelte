@@ -13,7 +13,7 @@
 	}
 </script>
 
-<td class={css_cell} onclick={onclick_cell}>
+<td class={css_cell} onclick={(e) => onclick_cell(e)}>
 	{#if value && typeof value === 'string' && value.length > limit}
 		{#if show}
 			<div>

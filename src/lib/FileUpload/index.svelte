@@ -9,7 +9,7 @@
 		onupload = () => {},
 		onchange = () => {},
 		showUploadButton = $bindable(true),
-		sizeClass=$bindable('is-small'),
+		sizeClass = $bindable('is-small'),
 		...rest
 	} = $props();
 
@@ -76,6 +76,7 @@
 			onchange={(event) => {
 				//console.log('>>>> ', event.target.files);
 				statusSend = 0;
+				// @ts-ignore - EventTarget.files not available in JS
 				selectedFiles = event.target.files; // Obten el primer archivo seleccionado
 				onselect({ files: selectedFiles, FormData: createFormData() });
 				onchange(event);

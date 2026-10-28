@@ -1,7 +1,7 @@
 <script>
 	/**
 	 * Represents the parameters supported by the BasicSelect component.
-	 * 
+	 *
 	 * @typedef {Object} BasicSelectProps
 	 * @property {string|null} [label=''] - The static text label rendered as an addon before the select dropdown.
 	 * @property {boolean} [isExpanded=false] - Whether the control should expand to fill the available width.
@@ -32,7 +32,7 @@
 
 <div class="field has-addons">
 	{#if label && label.length > 0}
-		<p class="control ">
+		<p class="control">
 			<!-- svelte-ignore a11y_missing_attribute -->
 			<a class="button is-static {css_class}"> {label} </a>
 		</p>

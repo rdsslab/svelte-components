@@ -14,7 +14,7 @@ export function ProcessDataTable(values) {
 				let sf = JSON.stringify(data);
 				let hash_data = sha256(sf && sf.length > 0 ? sf : '0');
 
-			//	console.log(hash_last_data, hash_data);
+				//	console.log(hash_last_data, hash_data);
 
 				if (hash_last_data !== hash_data) {
 					hash_last_data = hash_data;

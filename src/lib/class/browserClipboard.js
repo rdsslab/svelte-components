@@ -2,7 +2,7 @@
  * Copies the provided text to the user's system clipboard using modern `navigator.clipboard`
  * API when available, and a fallback `document.execCommand('copy')` if it is not.
  * Useful for copying links, codes, or IDs.
- * 
+ *
  * @param {string} text - The text content to be copied to the clipboard.
  * @returns {Promise<{result: boolean, error: Error|undefined}>} A Promise that resolves to an object containing:
  *   - `result`: Boolean indicating if the copy was successful.
@@ -13,10 +13,10 @@ export async function copyTextToClipboard(text) {
 	// Primero, intentamos usar la API moderna si está disponible
 	if (navigator.clipboard && navigator.clipboard.writeText) {
 		try {
-            await navigator.clipboard.writeText(text);
+			await navigator.clipboard.writeText(text);
 			result.result = true;
 		} catch (error) {
-			result.error = err;
+			result.error = error;
 		}
 	} else {
 		// Fallback para navegadores que no soportan la API clipboard (HTTP o viejos navegadores)

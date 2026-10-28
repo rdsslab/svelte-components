@@ -1,7 +1,7 @@
 <script>
 	/**
 	 * Represents the properties available for the custom TextArea component.
-	 * 
+	 *
 	 * @typedef {Object} TextAreaProps
 	 * @property {string} [value=''] - Bound active text string content inside the text area.
 	 * @property {string|null} [label] - Optional descriptive label rendered as a static add-on style above the text field.

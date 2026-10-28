@@ -70,7 +70,9 @@
 </script>
 
 <h2 class="title is-4">JSONView</h2>
-<p class="subtitle is-6">Visor de JSON con syntax highlighting, números de línea y copiado al portapapeles</p>
+<p class="subtitle is-6">
+	Visor de JSON con syntax highlighting, números de línea y copiado al portapapeles
+</p>
 
 <!-- ============================================================ -->
 <!-- Ejemplo 1: Datos simples -->
@@ -181,10 +183,7 @@
 <!-- ============================================================ -->
 <div class="box">
 	<h3 class="title is-5">String JSON</h3>
-	<JSONView
-		jsonObject={'{"status":"ok","items":[1,2,3]}'}
-		label="Input como string"
-	/>
+	<JSONView jsonObject={'{"status":"ok","items":[1,2,3]}'} label="Input como string" />
 </div>
 
 <!-- ============================================================ -->
@@ -192,7 +191,8 @@
 <!-- ============================================================ -->
 <div class="box">
 	<h3 class="title is-5">API</h3>
-	<pre><code>{`import { JSONView } from '$lib/index.js';
+	<pre><code
+			>{`import { JSONView } from '$lib/index.js';
 
 <JSONView
   jsonObject={myData}
@@ -213,7 +213,8 @@
 // showLineNumbers - boolean - Números de línea (default: true)
 // showBox     - boolean   - Wrapper Bulma .box (default: true)
 // maxHeight   - number    - Altura máxima en px, 0 = sin límite
-// emptyMessage - string   - Mensaje cuando está vacío`}</code></pre>
+// emptyMessage - string   - Mensaje cuando está vacío`}</code
+		></pre>
 </div>
 
 <style>

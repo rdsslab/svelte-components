@@ -12,7 +12,8 @@
 		row = $bindable(),
 		editInline = false,
 		css_cell,
-		onchangecell
+		onchangecell,
+		custom
 	} = $props();
 
 	$effect(() => {
@@ -37,14 +38,14 @@
 </script>
 
 {#if typeof value === 'boolean'}
-	<TBoolean bind:value bind:row {editInline} {css_cell} {onclick_cell}></TBoolean>
+	<TBoolean bind:value bind:row {editInline} {css_cell} {onclick_cell} {custom}></TBoolean>
 
 	<!-- Check for Date object. 
      Note: typeof new Date() is 'object', so this must come before the generic object check. -->
 {:else if value instanceof Date}
 	<DateTime bind:value {row} {editInline} {css_cell} {onclick_cell} />
 {:else if value && (typeof value === 'object' || Array.isArray(value))}
-	<TJson bind:value {editInline} {css_cell} {onclick_cell} />
+	<TJson bind:value {css_cell} {onclick_cell} />
 {:else if typeof value === 'number' || typeof value === 'bigint'}
 	<td onclick={onclick_cell} class={css_cell}
 		>{#if editInline}

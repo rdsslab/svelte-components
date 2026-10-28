@@ -32,6 +32,8 @@ export function parseHttpRequest(source: string, { fileName }?: {
     data: object;
     warnings: string[];
     notices: string[];
+    name: string;
+    format?: string;
 };
 /**
  * Parsea un comando `curl` (propio, DevTools, Postman, Swagger o escrito a mano).
@@ -47,6 +49,8 @@ export function parseCurlRequest(source: string, { fileName }?: {
     data: object;
     warnings: string[];
     notices: string[];
+    name: string;
+    format?: string;
 };
 /**
  * Parsea un script de PowerShell: el generado por RESTTester,
@@ -63,6 +67,8 @@ export function parsePowerShellRequest(source: string, { fileName }?: {
     data: object;
     warnings: string[];
     notices: string[];
+    name: string;
+    format?: string;
 };
 /**
  * Parsea un fragmento `fetch(...)` o `axios(...)` (DevTools → "Copy as fetch",
@@ -79,6 +85,8 @@ export function parseFetchRequest(source: string, { fileName }?: {
     data: object;
     warnings: string[];
     notices: string[];
+    name: string;
+    format?: string;
 };
 /**
  * Convierte el texto de un archivo en el estado de RESTTester.

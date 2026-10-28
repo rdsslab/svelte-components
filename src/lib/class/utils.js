@@ -10,7 +10,7 @@ export let notifications_store = writable([]);
 /**
  * Compares two values for equality. If the values are objects, they are compared via JSON.stringify.
  * Useful for deep comparison of simple objects or comparing state changes.
- * 
+ *
  * @param {any} value - The first value to compare (current state).
  * @param {any} new_value - The second value to compare (new state).
  * @returns {boolean} True if the stringified values are identical, false otherwise.
@@ -36,13 +36,16 @@ export class Notifications {
 
 	/**
 	 * Adds a new notification to the global store and automatically schedules its removal.
-	 * 
+	 *
 	 * @param {Object} new_notify - The notification object to add.
 	 * @param {string} [new_notify.id] - Optional ID. One will be generated if not provided.
 	 * @param {number} [new_notify.timeout=5000] - Duration in milliseconds before the notification is automatically removed.
 	 * @param {string} [new_notify.message] - The message text of the notification.
 	 * @param {string} [new_notify.title] - The title of the notification.
 	 * @param {string} [new_notify.color] - The color type: 'success', 'danger', 'warning', 'info'.
+	 * @param {number} [new_notify._remaining] - Remaining time in milliseconds.
+	 * @param {number} [new_notify._lastTick] - Last tick timestamp.
+	 * @param {boolean} [new_notify.paused] - Paused state.
 	 */
 	push(new_notify) {
 		new_notify.id = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -93,7 +96,7 @@ export class Notifications {
 
 	/**
 	 * Removes a notification from the global notifications store by its ID.
-	 * 
+	 *
 	 * @param {string} id - The unique identifier of the notification to be removed.
 	 */
 	removeNotify(id) {

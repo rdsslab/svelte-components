@@ -130,7 +130,7 @@
 							<span class="icon has-text-warning">
 								<i class="fa-solid fa-triangle-exclamation"></i>
 							</span>
-							<span>{error.message}</span>
+							<span>{error instanceof Error ? error.message : String(error)}</span>
 						</span>
 					</div>
 				{/snippet}
@@ -156,7 +156,7 @@
 						<span class="icon has-text-warning">
 							<i class="fa-solid fa-triangle-exclamation"></i>
 						</span>
-						<span>{error.message}</span>
+						<span>{error instanceof Error ? error.message : String(error)}</span>
 					</span>
 				</div>
 			{/snippet}
@@ -217,7 +217,7 @@
 						<span class="icon has-text-warning">
 							<i class="fa-solid fa-triangle-exclamation"></i>
 						</span>
-						<span>{error.message}</span>
+						<span>{error instanceof Error ? error.message : String(error)}</span>
 					</span>
 				</div>
 			{/snippet}

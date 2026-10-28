@@ -35,10 +35,7 @@
 	}
 
 	function escapeHtml(text) {
-		return String(text)
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;');
+		return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 	}
 
 	function createSafeRenderer(allowHtml) {
@@ -94,10 +91,8 @@
 			<div class="content {content_class}">{@html html_string}</div>
 		{/if}
 	</div>
-{:else}
-	{#if is_empty && empty_message}
-		<p class="has-text-grey">{empty_message}</p>
-	{:else if !is_empty}
-		<div class="content {content_class}">{@html html_string}</div>
-	{/if}
+{:else if is_empty && empty_message}
+	<p class="has-text-grey">{empty_message}</p>
+{:else if !is_empty}
+	<div class="content {content_class}">{@html html_string}</div>
 {/if}

@@ -127,7 +127,7 @@
 	</div>
 {/snippet}
 
-<Level right={[add_item]}></Level>
+<Level left={[]} right={[add_item]}></Level>
 
 {#if Array.isArray(data)}
 	{#each data as item, index (item._id || index)}
@@ -189,6 +189,7 @@
 						type="file"
 						multiple={false}
 						onchange={(event) => {
+							// @ts-ignore - EventTarget.files not available in JS
 							item.value = event.target.files;
 							onchange(data);
 						}}

@@ -14,6 +14,11 @@
 		onPageChange = (page) => {},
 		onPageSizeChange = (index) => {}
 	} = $props();
+
+	function handlePageSizeChange(e) {
+		// @ts-ignore - EventTarget.value not available in JS
+		onPageSizeChange(parseInt(e.target.value, 10));
+	}
 </script>
 
 <div class="table_pagination">
@@ -29,11 +34,7 @@
 				</div>
 				<div class="level-item">
 					<div class="buttons has-addons">
-						<button
-							aria-label="first page"
-							class="button is-small"
-							onclick={() => onPageChange(1)}
-						>
+						<button aria-label="first page" class="button is-small" onclick={() => onPageChange(1)}>
 							<span class="icon">
 								<i class="fas fa-angle-double-left"></i>
 							</span>
@@ -47,14 +48,12 @@
 								<i class="fas fa-angle-left"></i>
 							</span>
 						</button>
-						<button
-							class="button is-small is-info"
-							onclick={() => onPageChange(pageSelected)}>{pageSelected}</button
+						<button class="button is-small is-info" onclick={() => onPageChange(pageSelected)}
+							>{pageSelected}</button
 						>
 						{#each visiblePages as pageNum}
-							<button
-								class="button is-small"
-								onclick={() => onPageChange(pageNum)}>{pageNum}</button
+							<button class="button is-small" onclick={() => onPageChange(pageNum)}
+								>{pageNum}</button
 							>
 						{/each}
 						<button
@@ -85,12 +84,7 @@
 			<span class="level-item">
 				<span class="label_rows_per_page">Rows per page</span>
 				<div class="select is-small">
-					<select
-						name="rows_per_page"
-						onchange={(e) => {
-							onPageSizeChange(parseInt(e.target.value, 10));
-						}}
-					>
+					<select name="rows_per_page" onchange={handlePageSizeChange}>
 						{#each pageSize as item, itd}
 							<option value={itd} selected={item == pageSize[pageSizeSelected]}>{item}</option>
 						{/each}

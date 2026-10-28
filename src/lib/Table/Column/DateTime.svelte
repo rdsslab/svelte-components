@@ -47,7 +47,7 @@
 	let formattedValue = $derived(dt && dt.isValid ? dt.toLocal().toFormat(format) : '');
 </script>
 
-<td onclick={onclick_cell} class:has-text-danger={isNotToday} class={css_cell}>
+<td onclick={(e) => onclick_cell(e)} class:has-text-danger={isNotToday} class={css_cell}>
 	{#if isNotToday}
 		<span class="icon-text" title="Incorrect date">
 			<span class="icon">

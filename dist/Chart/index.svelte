@@ -2,6 +2,65 @@
 	import * as echarts from 'echarts';
 	import { onDestroy, onMount } from 'svelte';
 
+	/**
+	 * Un ítem de serie de ECharts. El consumidor puede enviar cualquier
+	 * configuración de serie (type, data, itemStyle, lineStyle, etc.) y el
+	 * componente le añade los valores por defecto (line, smooth, large).
+	 * @typedef {Object} EChartSeriesItem
+	 * @property {string} [type]
+	 * @property {string} [name]
+	 * @property {boolean} [showSymbol]
+	 * @property {boolean} [smooth]
+	 * @property {boolean} [large]
+	 * @property {Array<{value: Array, name?: string}>} [data]
+	 * @property {Record<string, unknown>} [itemStyle]
+	 * @property {Record<string, unknown>} [lineStyle]
+	 * @property {Record<string, unknown>} [emphasis]
+	 * @property {Record<string, unknown>} [encode]
+	 * @property {Record<string, unknown>} [markPoint]
+	 * @property {Record<string, unknown>} [markLine]
+	 * @property {Record<string, unknown>} [markArea]
+	 * @property {Record<string, unknown>} [z]
+	 * @property {Record<string, unknown>} [zlevel]
+	 * @property {Record<string, unknown>} [extra] Cualquier otra propiedad válida de ECharts.
+	 */
+
+	/**
+	 * Opción de configuración de ECharts (`option`).
+	 * @typedef {Object} EChartOption
+	 * @property {Record<string, unknown>} [title]
+	 * @property {Array<EChartSeriesItem>} [series]
+	 * @property {Record<string, unknown>} [tooltip]
+	 * @property {Record<string, unknown>} [legend]
+	 * @property {Record<string, unknown>} [grid]
+	 * @property {Record<string, unknown>} [xAxis]
+	 * @property {Record<string, unknown>} [yAxis]
+	 * @property {Array<Record<string, unknown>>} [dataZoom]
+	 * @property {Array<string|number>} [color]
+	 * @property {Record<string, unknown>} [toolbox]
+	 * @property {Record<string, unknown>} [backgroundColor]
+	 * @property {Record<string, unknown>} [extra] Cualquier otra propiedad válida de ECharts.
+	 */
+
+	/**
+	 * Instancia de ECharts. Expone los métodos que usa el componente.
+	 * @typedef {Object} EChartInstance
+	 * @property {(option: Record<string, unknown>, opts?: Record<string, unknown>) => void} setOption
+	 * @property {() => void} resize
+	 * @property {() => void} dispose
+	 * @property {(type: string, listener: Function) => void} on
+	 * @property {(type: string, listener?: Function) => void} off
+	 */
+
+	/**
+	 * @type {{
+	 *   title?: string,
+	 *   data?: Array<unknown>,
+	 *   series?: Array<EChartSeriesItem>,
+	 *   option?: Record<string, unknown>,
+	 *   chart?: EChartInstance | null
+	 * }}
+	 */
 	let {
 		title = $bindable('Title'),
 		data = $bindable([]),
@@ -10,8 +69,8 @@
 		chart = $bindable(null)
 	} = $props();
 
-	let chartDom;
-	let myChart;
+	let /** @type {HTMLElement|null} */ chartDom;
+	let /** @type {EChartInstance|null} */ myChart;
 	let dataZoomApplied = false;
 
 	function buildSeries() {
@@ -35,15 +94,15 @@
 		// Leer las props reactivas de forma incondicional: si quedan detrás del guard de
 		// `myChart`, en el primer render (antes de que onMount asigne myChart) este efecto
 		// no registraría ninguna dependencia y nunca se volvería a ejecutar.
-		const { dataZoom, ...restOption } = option ?? {};
-		const nextOption = {
-			...restOption,
-			title: {
-				...option?.title,
-				text: title
-			},
+		const optionObj = /** @type {Record<string, unknown>} */ (option ?? {});
+		const dataZoom = optionObj.dataZoom;
+		const restOption = /** @type {Record<string, unknown>} */ ({ ...optionObj });
+		delete restOption.dataZoom;
+		/** @type {Record<string, unknown>} */
+		const nextOption = Object.assign({}, restOption, {
+			title: Object.assign({ text: title }, option?.title ?? {}),
 			series: buildSeries()
-		};
+		});
 
 		// `dataZoom` solo se aplica una vez, al render inicial: si se reenvía en cada
 		// setOption, ECharts pisa el rango de zoom/selección que el usuario haya

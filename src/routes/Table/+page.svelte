@@ -4,9 +4,62 @@
 	const notify = new Notifications();
 
 	// --- Demo 1: Local data (paginación, búsqueda, export, selección) ---
-	const firstNames = ['Ana', 'Carlos', 'María', 'Pedro', 'Lucía', 'Jorge', 'Elena', 'Roberto', 'Sofía', 'Diego', 'Valentina', 'Andrés', 'Camila', 'Luis', 'Isabella', 'Miguel', 'Gabriela', 'Fernando', 'Daniela', 'Martín'];
-	const lastNames = ['García', 'López', 'Martínez', 'González', 'Hernández', 'Rodríguez', 'Pérez', 'Sánchez', 'Ramírez', 'Torres', 'Flores', 'Rivera', 'Gómez', 'Díaz', 'Cruz', 'Morales', 'Reyes', 'Ortiz', 'Gutiérrez', 'Castillo'];
-	const cities = ['Lima', 'Bogotá', 'Quito', 'Santiago', 'Buenos Aires', 'Caracas', 'Medellín', 'Cali', 'Guayaquil', 'Montevideo'];
+	const firstNames = [
+		'Ana',
+		'Carlos',
+		'María',
+		'Pedro',
+		'Lucía',
+		'Jorge',
+		'Elena',
+		'Roberto',
+		'Sofía',
+		'Diego',
+		'Valentina',
+		'Andrés',
+		'Camila',
+		'Luis',
+		'Isabella',
+		'Miguel',
+		'Gabriela',
+		'Fernando',
+		'Daniela',
+		'Martín'
+	];
+	const lastNames = [
+		'García',
+		'López',
+		'Martínez',
+		'González',
+		'Hernández',
+		'Rodríguez',
+		'Pérez',
+		'Sánchez',
+		'Ramírez',
+		'Torres',
+		'Flores',
+		'Rivera',
+		'Gómez',
+		'Díaz',
+		'Cruz',
+		'Morales',
+		'Reyes',
+		'Ortiz',
+		'Gutiérrez',
+		'Castillo'
+	];
+	const cities = [
+		'Lima',
+		'Bogotá',
+		'Quito',
+		'Santiago',
+		'Buenos Aires',
+		'Caracas',
+		'Medellín',
+		'Cali',
+		'Guayaquil',
+		'Montevideo'
+	];
 
 	function randomFromArray(arr) {
 		return arr[Math.floor(Math.random() * arr.length)];
@@ -74,12 +127,20 @@
 				address: { street: 'Calle Nueva', code: Math.floor(Math.random() * 99999) }
 			}
 		];
-		notify.push({ message: `Fila "${first} ${last}" agregada. Total: ${localData.length}`, color: 'success', title: 'Fila agregada' });
+		notify.push({
+			message: `Fila "${first} ${last}" agregada. Total: ${localData.length}`,
+			color: 'success',
+			title: 'Fila agregada'
+		});
 	}
 
 	function regenerateData() {
 		localData = generateData(80);
-		notify.push({ message: 'Datos regenerados (80 filas).', color: 'info', title: 'Datos regenerados' });
+		notify.push({
+			message: 'Datos regenerados (80 filas).',
+			color: 'info',
+			title: 'Datos regenerados'
+		});
 	}
 </script>
 
@@ -90,9 +151,9 @@
 	<div class="box">
 		<h2 class="title is-5">1. Datos locales - Paginacion, busqueda, export, seleccion</h2>
 		<p class="subtitle is-6">
-			<strong>80 filas</strong> para probar paginacion con el nuevo rango dinamico.
-			Usa el checkbox de seleccion multiple para probar <strong>"select all"</strong> (selecciona todas las paginas).
-			La busqueda tiene <strong>debounce de 300ms</strong>.
+			<strong>80 filas</strong> para probar paginacion con el nuevo rango dinamico. Usa el checkbox
+			de seleccion multiple para probar <strong>"select all"</strong> (selecciona todas las
+			paginas). La busqueda tiene <strong>debounce de 300ms</strong>.
 		</p>
 		<div class="buttons mb-4">
 			<button class="button is-small is-link" onclick={addRandomRow}>
@@ -122,10 +183,18 @@
 				addRandomRow();
 			}}
 			oneditrow={(e) => {
-				notify.push({ message: `Editando: ${JSON.stringify(e.name || 'row')}`, color: 'info', title: 'Edit' });
+				notify.push({
+					message: `Editando: ${JSON.stringify(e.name || 'row')}`,
+					color: 'info',
+					title: 'Edit'
+				});
 			}}
 			ondeleterow={(e) => {
-				notify.push({ message: `${e.rows.length} fila(s) eliminada(s)`, color: 'warning', title: 'Delete' });
+				notify.push({
+					message: `${e.rows.length} fila(s) eliminada(s)`,
+					color: 'warning',
+					title: 'Delete'
+				});
 			}}
 			onselectrows={(e) => {
 				console.log('Selected rows:', e.rows.length);
@@ -137,9 +206,9 @@
 	<div class="box">
 		<h2 class="title is-5">2. Datos del servidor - Indicador de carga</h2>
 		<p class="subtitle is-6">
-			Se conecta a <code>jsonplaceholder.typicode.com/users</code>.
-			Observa la barra de carga (<strong>"Loading data..."</strong>) sobre la tabla al recargar.
-			El timer de refresco esta en <strong>8 segundos</strong>.
+			Se conecta a <code>jsonplaceholder.typicode.com/users</code>. Observa la barra de carga (<strong
+				>"Loading data..."</strong
+			>) sobre la tabla al recargar. El timer de refresco esta en <strong>8 segundos</strong>.
 		</p>
 
 		<Table
@@ -157,10 +226,11 @@
 	<div class="box">
 		<h2 class="title is-5">3. Select All - Datos grandes (250 filas)</h2>
 		<p class="subtitle is-6">
-			Dataset de <strong>250 registros</strong>. El checkbox "select all" en el encabezado selecciona
-			<strong>TODOS</strong> los registros de todas las paginas usando <code>Set</code> (O(1) por busqueda).
-			Prueba seleccionar todo y luego exportar a Excel para ver los estilos zebra.
-			Esta tabla <strong>no</strong> define <code>storageKey</code>: usa una clave automatica y la
+			Dataset de <strong>250 registros</strong>. El checkbox "select all" en el encabezado
+			selecciona
+			<strong>TODOS</strong> los registros de todas las paginas usando <code>Set</code> (O(1) por
+			busqueda). Prueba seleccionar todo y luego exportar a Excel para ver los estilos zebra. Esta
+			tabla <strong>no</strong> define <code>storageKey</code>: usa una clave automatica y la
 			seleccion de columnas <strong>persiste por defecto</strong>.
 		</p>
 

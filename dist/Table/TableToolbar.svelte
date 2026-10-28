@@ -37,7 +37,7 @@
 
 {#snippet t_refresh()}
 	{#if requestData && requestData.url}
-		<button class="button is-small" onclick={onRefresh} title="Refresh time">
+		<button class="button is-small" onclick={(e) => onRefresh(e)} title="Refresh time">
 			{#if loading}
 				<span class="icon has-text-info"><i class="fas fa-spinner fa-pulse"></i></span>
 			{:else if LastFetchResponse}
@@ -58,11 +58,16 @@
 				type="text"
 				placeholder="Search"
 				bind:value={text_search}
-				oninput={onSearchInput}
+				oninput={(e) => onSearchInput(e)}
 			/>
 		</p>
 		<p class="control">
-			<button aria-label="close" class="button is-small" title="Search" onclick={onSearch}>
+			<button
+				aria-label="close"
+				class="button is-small"
+				title="Search"
+				onclick={(e) => onSearch(e)}
+			>
 				<span class="icon is-small">
 					<i class="fas fa-search"></i>
 				</span>
@@ -180,7 +185,7 @@
 			class="button is-small"
 			title="Show / hide columns"
 			data-testid="table-columns-button"
-			onclick={onColumns}
+			onclick={(e) => onColumns(e)}
 		>
 			<span class="icon">
 				<i class="fas fa-table-columns"></i>
@@ -191,7 +196,12 @@
 
 {#snippet t_delete()}
 	{#if showDeleteButton}
-		<button aria-label="close" class="button is-small" title="Delete row" onclick={onDelete}>
+		<button
+			aria-label="close"
+			class="button is-small"
+			title="Delete row"
+			onclick={(e) => onDelete(e)}
+		>
 			<span class="icon">
 				<i class={iconDeleteRow}></i>
 			</span>
@@ -201,7 +211,7 @@
 
 {#snippet t_edit()}
 	{#if showEditButton}
-		<button aria-label="close" class="button is-small" title="Edit row" onclick={onEdit}>
+		<button aria-label="close" class="button is-small" title="Edit row" onclick={(e) => onEdit(e)}>
 			<span class="icon">
 				<i class="far fa-edit"></i>
 			</span>

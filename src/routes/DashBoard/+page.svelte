@@ -5,10 +5,8 @@
 	let menu = [
 		{
 			title: '',
-		
-			items: [
-				{ label: 'App', icon: ' fa-brands fa-font-awesome ', link: '' }
-			]
+
+			items: [{ label: 'App', icon: ' fa-brands fa-font-awesome ', link: '' }]
 		}
 	];
 
@@ -32,4 +30,5 @@
 
 <AppBase bind:menu topLeftNavBar={[label1]} topRightNavBar={[bnt1]}>
 	<textarea class="textarea" placeholder="e.g. Hello world"></textarea>
-	<Table></Table></AppBase>
+	<Table></Table></AppBase
+>

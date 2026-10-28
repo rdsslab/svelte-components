@@ -4,15 +4,27 @@
 	const notify = new Notifications();
 
 	function pushSuccess() {
-		notify.push({ title: 'Éxito', message: 'Operación completada correctamente.', color: 'success' });
+		notify.push({
+			title: 'Éxito',
+			message: 'Operación completada correctamente.',
+			color: 'success'
+		});
 	}
 
 	function pushDanger() {
-		notify.push({ title: 'Error', message: 'Ocurrió un error al procesar la solicitud.', color: 'danger' });
+		notify.push({
+			title: 'Error',
+			message: 'Ocurrió un error al procesar la solicitud.',
+			color: 'danger'
+		});
 	}
 
 	function pushWarning() {
-		notify.push({ title: 'Advertencia', message: 'La sesión expirará en 5 minutos.', color: 'warning' });
+		notify.push({
+			title: 'Advertencia',
+			message: 'La sesión expirará en 5 minutos.',
+			color: 'warning'
+		});
 	}
 
 	function pushInfo() {
@@ -20,7 +32,12 @@
 	}
 
 	function pushCustomTimeout() {
-		notify.push({ title: 'Largo', message: 'Esta notificación dura 10 segundos.', color: 'success', timeout: 10000 });
+		notify.push({
+			title: 'Largo',
+			message: 'Esta notificación dura 10 segundos.',
+			color: 'success',
+			timeout: 10000
+		});
 	}
 
 	function pushMultiple() {
@@ -44,7 +61,8 @@
 
 <div class="box mt-5">
 	<h3 class="title is-5">API</h3>
-<pre><code>import {'{ Notifications }'} from '$lib/index.js';
+	<pre><code
+			>import {'{ Notifications }'} from '$lib/index.js';
 
 const notify = new Notifications();
 
@@ -55,7 +73,8 @@ notify.push({'{'} title: '...', message: '...', color: 'success' {'}'});
 notify.push({'{'} title: '...', message: '...', color: 'danger', timeout: 10000 {'}'});
 
 // Eliminar manualmente
-notify.removeNotify(id);</code></pre>
+notify.removeNotify(id);</code
+		></pre>
 </div>
 
 <Notify />

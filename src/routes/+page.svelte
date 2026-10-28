@@ -11,7 +11,10 @@
 		Notifications,
 		FileUpload,
 		EditorContent,
-		Tab, Input, MenuSide, BasicSelect 
+		Tab,
+		Input,
+		MenuSide,
+		BasicSelect
 	} from '../lib/index.js';
 	import { onMount } from 'svelte';
 	//import { jsonFootprint } from '../lib/Table/utils/utils.js';
@@ -36,7 +39,7 @@
 		}
 	};
 
-	let  isoDate = "2025-01-29T19:04:00.000Z";
+	let isoDate = '2025-01-29T19:04:00.000Z';
 
 	let menujson = {
 		start: [
@@ -257,7 +260,7 @@
 	let active_tab = 2;
 	*/
 
-let row = {};
+	let row = {};
 
 	let docs = {
 		time: 1742007989316,
@@ -302,7 +305,8 @@ let row = {};
 	let lang = 'json';
 
 	setTimeout(() => {
-		code = { aa: 898, sss: 12, ddd: 90, ddd: { dd: 90, ddd: 90, kk: { ee: 77, q: 'dddd' } } };
+		// @ts-ignore - code changes shape dynamically
+		code = { aa: 898, sss: 12, ddd: { dd: 90, ddd: 90, kk: { ee: 77, q: 'dddd' } } };
 		console.log('Cambia de codigo');
 	}, 10000);
 
@@ -311,16 +315,16 @@ let row = {};
 	}, 10000);
 </script>
 
-
 <BasicSelect label="Selecciona una opción"></BasicSelect>
 
 <Input
 	placeholder="Escribe algo..."
 	bind:value={valor}
-	lang={lang}
+	{lang}
 	onchange={(e) => {
 		console.log('Valor cambiado', e);
-	}}></Input>
+	}}
+></Input>
 
 {#snippet user()}
 	<span class="icon-text">
@@ -419,14 +423,10 @@ let row = {};
 	}}>Mostrar</button
 >
 
-
-
-
 {#snippet bt1()}
 	<button class="button is-dark">Dark</button>
 {/snippet}
 <button class="button is-dark">Dark</button>
-
 
 <Notify></Notify>
 

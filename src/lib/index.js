@@ -108,6 +108,8 @@ export {
 	TextArea,
 	MenuSide,
 	MarkdownViewer,
-	OpenFusionWebsocketClient, ChartWidgets as Chart, AppBase
+	OpenFusionWebsocketClient,
+	ChartWidgets as Chart,
+	AppBase
 };
 //export { default as DialogModal } from "./Dialog/Modal.svelte";

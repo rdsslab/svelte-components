@@ -20,6 +20,9 @@ export class Notifications {
      * @param {string} [new_notify.message] - The message text of the notification.
      * @param {string} [new_notify.title] - The title of the notification.
      * @param {string} [new_notify.color] - The color type: 'success', 'danger', 'warning', 'info'.
+     * @param {number} [new_notify._remaining] - Remaining time in milliseconds.
+     * @param {number} [new_notify._lastTick] - Last tick timestamp.
+     * @param {boolean} [new_notify.paused] - Paused state.
      */
     push(new_notify: {
         id?: string;
@@ -27,6 +30,9 @@ export class Notifications {
         message?: string;
         title?: string;
         color?: string;
+        _remaining?: number;
+        _lastTick?: number;
+        paused?: boolean;
     }): void;
     _startTimer(id: any, timeout: any): void;
     /**

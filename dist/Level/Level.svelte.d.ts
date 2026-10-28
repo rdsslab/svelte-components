@@ -4,10 +4,10 @@ type Level = {
     $set?(props: Partial<$$ComponentProps>): void;
 };
 declare const Level: import("svelte").Component<{
-    left: any;
-    right: any;
+    left?: any;
+    right?: any;
 }, {}, "">;
 type $$ComponentProps = {
-    left: any;
-    right: any;
+    left?: any;
+    right?: any;
 };

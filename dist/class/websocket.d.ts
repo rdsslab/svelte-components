@@ -4,13 +4,16 @@
  * @type {import('svelte/store').Writable<Object>}
  */
 export const storeChangedTables: import("svelte/store").Writable<any>;
-declare const WebSocketClient_base: typeof import("events");
 /**
  * WebSocketClient class responsible for establishing a connection to the server's WebSocket endpoint.
  * It listens for 'pgNotify' events to update the `storeChangedTables` store.
  * Inherits from EventEmitter to potentially allow event-driven architecture.
  */
-export class WebSocketClient extends WebSocketClient_base {
+export class WebSocketClient extends EventEmitter<any> {
+    /**
+     * Initializes the WebSocket client.
+     */
+    constructor();
     /**
      * The WebSocket instance.
      * @type {WebSocket}
@@ -24,4 +27,4 @@ export class WebSocketClient extends WebSocketClient_base {
      */
     connect(): WebSocket;
 }
-export {};
+import { EventEmitter } from 'events';

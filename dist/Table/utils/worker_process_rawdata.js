@@ -41,14 +41,14 @@ function GenerateRowHash(row) {
 	// Generate a hash string based ONLY on primitive values processing in key order
 	// to ensure consistency.
 	// However, iterating Object.keys is generally insertion order.
-	// To be perfectly safe, we should sort keys if we want deterministic hash across JS engines 
-	// for objects created differently, but for performance we rely on standard iteration 
+	// To be perfectly safe, we should sort keys if we want deterministic hash across JS engines
+	// for objects created differently, but for performance we rely on standard iteration
 	// since incoming data usually has consistent structure.
 
 	// User requested: "en caso de que la columna contenga un objeto json o array no aplicar el ordenmiento, solo aplicar el ordenamiento para tipos basicos"
 	// We interpret "ordenamiento" as "hashing/processing" for duplicate detection.
 
-	let hashStr = "";
+	let hashStr = '';
 	// We iterate the row properties directly.
 	for (const key in row) {
 		if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
@@ -59,11 +59,11 @@ function GenerateRowHash(row) {
 
 		// Include primitives in hash
 		if (value === null) {
-			hashStr += key + ":null|";
+			hashStr += key + ':null|';
 		} else if (value instanceof Date) {
-			hashStr += key + ":" + value.getTime() + "|";
+			hashStr += key + ':' + value.getTime() + '|';
 		} else if (type === 'string' || type === 'number' || type === 'boolean') {
-			hashStr += key + ":" + value + "|";
+			hashStr += key + ':' + value + '|';
 		}
 		// Complex objects (arrays, objects) are ignored for the hash
 	}
@@ -74,10 +74,10 @@ function GenerateRowHash(row) {
 function ProcessRawData(RawDataTable, columns) {
 	const processedData = [];
 	const seenHashes = new Set();
-	let globalHashContent = "";
+	let globalHashContent = '';
 
 	// Determine column order from config if provided
-	// 'columns' might be an object { colName: config, ... } or possibly array. 
+	// 'columns' might be an object { colName: config, ... } or possibly array.
 	// The previous code iterated 'for (let col in columns)' implying keys.
 	const orderedKeys = columns ? Object.keys(columns) : [];
 
@@ -96,7 +96,7 @@ function ProcessRawData(RawDataTable, columns) {
 			let counter = 1;
 			let originalHash = rowHash;
 			while (seenHashes.has(rowHash)) {
-				rowHash = originalHash + "-" + counter + "-" + i; // mix index to be sure
+				rowHash = originalHash + '-' + counter + '-' + i; // mix index to be sure
 				counter++;
 			}
 		}

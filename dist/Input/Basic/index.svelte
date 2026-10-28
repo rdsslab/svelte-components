@@ -4,7 +4,7 @@
 
 	/**
 	 * Represents the parameters supported by the basic Input component.
-	 * 
+	 *
 	 * @typedef {Object} InputProps
 	 * @property {string} [placeholder=''] - Text that appears in the input element when it has no value set.
 	 * @property {string} [type='text'] - The type of input to render ('text', 'number', 'date', 'datetime-local', 'file', 'checkbox', 'boolean').
@@ -51,7 +51,6 @@
 		...rest
 	} = $props();
 
-
 	// Generate a stable unique ID for accessibility if not provided
 	const id = rest.id || `input-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -62,13 +61,16 @@
 		if (!value) return '';
 		if (type !== 'datetime-local') return '';
 
+		// @ts-ignore - zone option type
 		let d = DateTime.fromISO(value, { zone: 'utc' });
 		if (!d.isValid) {
+			// @ts-ignore - zone option type
 			d = DateTime.fromSQL(value, { zone: 'utc' });
 		}
 		if (!d.isValid) {
 			const parsedDate = new Date(value);
 			if (!isNaN(parsedDate.getTime())) {
+				// @ts-ignore - zone option type
 				d = DateTime.fromJSDate(parsedDate, { zone: 'utc' });
 			}
 		}
@@ -79,13 +81,16 @@
 		if (!value) return '';
 		if (type !== 'date') return '';
 
+		// @ts-ignore - zone option type
 		let d = DateTime.fromISO(value, { zone: 'utc' });
 		if (!d.isValid) {
+			// @ts-ignore - zone option type
 			d = DateTime.fromSQL(value, { zone: 'utc' });
 		}
 		if (!d.isValid) {
 			const parsedDate = new Date(value);
 			if (!isNaN(parsedDate.getTime())) {
+				// @ts-ignore - zone option type
 				d = DateTime.fromJSDate(parsedDate, { zone: 'utc' });
 			}
 		}
@@ -97,8 +102,8 @@
 	<FileUpload
 		bind:label
 		bind:accept
-		bind:url
-		bind:multiple
+		{url}
+		{multiple}
 		{onchange}
 		{onselect}
 		{onupload}
@@ -144,9 +149,11 @@
 					{...rest}
 					value={localDateTime}
 					onchange={(e) => {
+						// @ts-ignore - EventTarget.value not available in JS
 						if (!e.target.value) {
 							value = null;
 						} else {
+							// @ts-ignore - EventTarget.value not available in JS
 							value = DateTime.fromFormat(e.target.value, "yyyy-MM-dd'T'HH:mm").toUTC().toISO();
 						}
 						onchange(e);
@@ -163,9 +170,11 @@
 					{...rest}
 					value={dateFormated}
 					onchange={(e) => {
+						// @ts-ignore - EventTarget.value not available in JS
 						if (!e.target.value) {
 							value = null;
 						} else {
+							// @ts-ignore - EventTarget.value not available in JS
 							value = DateTime.fromFormat(e.target.value, 'yyyy-MM-dd', { zone: 'utc' }).toISO();
 						}
 						onchange(e);
@@ -184,7 +193,7 @@
 					{placeholder}
 					{required}
 					{...rest}
-					{onchange}
+					onchange={(e) => onchange(e)}
 				/>
 			{:else if type == 'boolean'}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -208,7 +217,7 @@
 					{required}
 					{pattern}
 					{...rest}
-					{onchange}
+					onchange={(e) => onchange(e)}
 				/>
 			{/if}
 		</p>

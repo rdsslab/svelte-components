@@ -7,7 +7,11 @@
 		{
 			title: 'General',
 			items: [
-				{ label: 'Dashboard', icon: 'fas fa-tachometer-alt', onclick: () => console.log('Dashboard clicked') },
+				{
+					label: 'Dashboard',
+					icon: 'fas fa-tachometer-alt',
+					onclick: () => console.log('Dashboard clicked')
+				},
 				{ label: 'Users', icon: 'fas fa-users', onclick: () => console.log('Users clicked') }
 			]
 		},
@@ -18,15 +22,26 @@
 					label: 'System',
 					icon: 'fas fa-cog',
 					items: [
-						{ label: 'Security', icon: 'fas fa-shield-alt', onclick: () => console.log('Security clicked') },
-						{ label: 'Notifications', icon: 'fas fa-bell', onclick: () => console.log('Notifications clicked') }
+						{
+							label: 'Security',
+							icon: 'fas fa-shield-alt',
+							onclick: () => console.log('Security clicked')
+						},
+						{
+							label: 'Notifications',
+							icon: 'fas fa-bell',
+							onclick: () => console.log('Notifications clicked')
+						}
 					]
 				},
-				{ label: 'Profile', icon: 'fas fa-user-circle', onclick: () => console.log('Profile clicked') }
+				{
+					label: 'Profile',
+					icon: 'fas fa-user-circle',
+					onclick: () => console.log('Profile clicked')
+				}
 			]
 		}
 	]);
-
 </script>
 
 {#snippet snp_logo_icon()}
@@ -49,7 +64,10 @@
 {#snippet snp_notifications()}
 	<span class="icon is-clickable mr-3">
 		<i class="fas fa-bell"></i>
-		<span class="tag is-danger is-rounded" style="position: absolute; top: -5px; right: -5px; font-size: 0.6rem;">3</span>
+		<span
+			class="tag is-danger is-rounded"
+			style="position: absolute; top: -5px; right: -5px; font-size: 0.6rem;">3</span
+		>
 	</span>
 {/snippet}
 
@@ -57,7 +75,11 @@
 	<div class="is-flex is-align-items-center is-clickable">
 		<span class="mr-2">John Doe</span>
 		<figure class="image is-24x24">
-			<img class="is-rounded" src="https://ui-avatars.com/api/?name=John+Doe&background=random" alt="User avatar" />
+			<img
+				class="is-rounded"
+				src="https://ui-avatars.com/api/?name=John+Doe&background=random"
+				alt="User avatar"
+			/>
 		</figure>
 	</div>
 {/snippet}
@@ -109,8 +131,10 @@
 				<h3 class="title is-4">Data Section {i + 1}</h3>
 				<div class="columns">
 					<div class="column">
-						<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus nec iaculis mauris. 
-						   Integer a placerat at, porta vel, euismod a, libero. Suspendisse potenti.</p>
+						<p>
+							Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus nec iaculis mauris.
+							Integer a placerat at, porta vel, euismod a, libero. Suspendisse potenti.
+						</p>
 					</div>
 					<div class="column">
 						<table class="table is-fullwidth is-striped">
@@ -120,16 +144,16 @@
 									<th>Value</th>
 								</tr>
 							</thead>
-						<tbody>
-							<tr>
-								<td>CPU Usage</td>
-								<td>{(i * 17 + 23) % 100}%</td>
-							</tr>
-							<tr>
-								<td>Memory</td>
-								<td>{(i * 7 + 3) % 32}GB</td>
-							</tr>
-						</tbody>
+							<tbody>
+								<tr>
+									<td>CPU Usage</td>
+									<td>{(i * 17 + 23) % 100}%</td>
+								</tr>
+								<tr>
+									<td>Memory</td>
+									<td>{(i * 7 + 3) % 32}GB</td>
+								</tr>
+							</tbody>
 						</table>
 					</div>
 				</div>
@@ -140,9 +164,11 @@
 
 <style>
 	/* Los colores base ahora vienen de AppBase automáticamente */
-	
+
 	.box {
-		background-color: var(--topbar-bg) !important; /* Reutilizamos el fondo de topbar para las cajas */
+		background-color: var(
+			--topbar-bg
+		) !important; /* Reutilizamos el fondo de topbar para las cajas */
 		color: var(--text-primary) !important;
 		border: 1px solid var(--border-color) !important;
 	}
@@ -153,7 +179,8 @@
 		border-color: var(--border-color) !important;
 	}
 
-	.title, .subtitle {
+	.title,
+	.subtitle {
 		color: var(--text-primary) !important;
 	}
 
@@ -166,5 +193,3 @@
 		color: var(--text-secondary) !important;
 	}
 </style>
-
-

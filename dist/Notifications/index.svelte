@@ -7,7 +7,7 @@
 		list_notify = value;
 	});
 
-	let visibleCount = $derived(list_notify.filter(n => !n.hidden).length);
+	let visibleCount = $derived(list_notify.filter((n) => !n.hidden).length);
 	let overflowCount = $derived(Math.max(0, visibleCount - 5));
 
 	const ICONS = {
@@ -84,7 +84,10 @@
 					{/if}
 					<div class="notification-message">{s.message}</div>
 					<div class="notification-progress">
-						<div class="notification-progress-bar" style="width: {Math.max(0, (s._remaining / s.timeout) * 100)}%;"></div>
+						<div
+							class="notification-progress-bar"
+							style="width: {Math.max(0, (s._remaining / s.timeout) * 100)}%;"
+						></div>
 					</div>
 				</div>
 				<button
@@ -123,14 +126,18 @@
 		align-items: flex-start;
 		background: #fff;
 		border-radius: 8px;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), 0 1px 4px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 4px 16px rgba(0, 0, 0, 0.18),
+			0 1px 4px rgba(0, 0, 0, 0.08);
 		padding: 0.875rem 1rem;
 		position: relative;
 		overflow: hidden;
 		cursor: pointer;
 		pointer-events: auto;
 		animation: slideIn 0.3s ease-out forwards;
-		transition: transform 0.2s ease, opacity 0.2s ease;
+		transition:
+			transform 0.2s ease,
+			opacity 0.2s ease;
 		border-left: 4px solid transparent;
 	}
 
@@ -198,7 +205,9 @@
 		color: #999;
 		font-size: 0.75rem;
 		border-radius: 4px;
-		transition: background 0.15s ease, color 0.15s ease;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease;
 		pointer-events: auto;
 	}
 

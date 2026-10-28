@@ -16,6 +16,7 @@
 
 	const dispatch = createEventDispatcher();
 
+	/** @type {any} */
 	export let code = '';
 	export let left = null;
 	export let right = null;

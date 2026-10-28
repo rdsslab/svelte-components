@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
-	import  Chart  from '$lib/Chart/TimeSeries/index.svelte';
+	import Chart from '$lib/Chart/TimeSeries/index.svelte';
 
 	let { idapp = $bindable() } = $props();
 	let data = $state([]);
@@ -27,7 +27,7 @@
 	onMount(() => {
 		setInterval(function () {
 			data.push(randomData());
-		//	console.log($state.snapshot(data));
+			//	console.log($state.snapshot(data));
 			data = [...data];
 		}, 1000);
 		//
@@ -36,7 +36,7 @@
 
 <div class="columns">
 	<div class="column">
-		<Chart title bind:data></Chart>
+		<Chart title="" bind:data></Chart>
 	</div>
 	<div class="column"><Chart title="Segundo"></Chart></div>
 </div>

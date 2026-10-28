@@ -115,14 +115,18 @@ npm install @rdsslab/svelte-components
 
 **Fin del documento.**`);
 
-	let xssMarkdown = 'Texto con <strong>HTML fuerte</strong> y <script>alert("XSS")<\/script> inevitable.\n\n[Click malicioso](javascript:alert(1))';
-	let xssLinkMarkdown = 'Link normal: [Google](https://www.google.com)\n\nLink malicioso: [Click aqui](javascript:alert("XSS"))';
+	let xssMarkdown =
+		'Texto con <strong>HTML fuerte</strong> y <script>alert("XSS")<\/script> inevitable.\n\n[Click malicioso](javascript:alert(1))';
+	let xssLinkMarkdown =
+		'Link normal: [Google](https://www.google.com)\n\nLink malicioso: [Click aqui](javascript:alert("XSS"))';
 	let breaksDisabled = 'Primera linea\nSegunda linea\nTercera linea';
 	let breaksEnabled = 'Primera linea\nSegunda linea\nTercera linea';
 </script>
 
 <h2 class="title is-4">MarkdownViewer</h2>
-<p class="subtitle is-6">Componente para renderizar Markdown de forma reactiva con soporte GFM y protección XSS.</p>
+<p class="subtitle is-6">
+	Componente para renderizar Markdown de forma reactiva con soporte GFM y protección XSS.
+</p>
 
 <!-- Example 1: Modo Edición -->
 <div class="box">
@@ -130,11 +134,11 @@ npm install @rdsslab/svelte-components
 	<p class="mb-4">Editor y preview en tiempo real con bind bidireccional.</p>
 
 	<div class="buttons mb-4">
-		<button class="button is-small" class:is-primary={!editMode} onclick={() => editMode = false}>
+		<button class="button is-small" class:is-primary={!editMode} onclick={() => (editMode = false)}>
 			<span class="icon is-small"><i class="fas fa-eye"></i></span>
 			<span>Preview</span>
 		</button>
-		<button class="button is-small" class:is-primary={editMode} onclick={() => editMode = true}>
+		<button class="button is-small" class:is-primary={editMode} onclick={() => (editMode = true)}>
 			<span class="icon is-small"><i class="fas fa-edit"></i></span>
 			<span>Editor</span>
 		</button>
@@ -159,7 +163,11 @@ npm install @rdsslab/svelte-components
 	<MarkdownViewer markdown={basicMarkdown} />
 	<details class="mt-3">
 		<summary class="has-text-link is-clickable" style="cursor: pointer;">Ver código fuente</summary>
-		<pre class="mt-2" style="background: var(--app-bg); padding: 0.75rem; border-radius: 4px; font-size: 0.85rem;"><code>{basicMarkdown}</code></pre>
+		<pre
+			class="mt-2"
+			style="background: var(--app-bg); padding: 0.75rem; border-radius: 4px; font-size: 0.85rem;"><code
+				>{basicMarkdown}</code
+			></pre>
 	</details>
 </div>
 
@@ -202,8 +210,8 @@ npm install @rdsslab/svelte-components
 <div class="box">
 	<h3 class="title is-5">Protección XSS</h3>
 	<p class="mb-4">
-		Por defecto (<code>allow_html=false</code>) el HTML raw se escapa y los links con protocolos peligrosos
-		(<code>javascript:</code>, <code>data:</code>, etc.) se eliminan.
+		Por defecto (<code>allow_html=false</code>) el HTML raw se escapa y los links con protocolos
+		peligrosos (<code>javascript:</code>, <code>data:</code>, etc.) se eliminan.
 	</p>
 
 	<div class="columns">
@@ -217,9 +225,11 @@ npm install @rdsslab/svelte-components
 		</div>
 	</div>
 
-	<hr class="my-4">
+	<hr class="my-4" />
 
-	<p class="has-text-weight-semibold mb-2">Links: los protocolos peligrosos se eliminan siempre, incluso con allow_html=true:</p>
+	<p class="has-text-weight-semibold mb-2">
+		Links: los protocolos peligrosos se eliminan siempre, incluso con allow_html=true:
+	</p>
 	<MarkdownViewer markdown={xssLinkMarkdown} allow_html={true} />
 </div>
 
@@ -244,7 +254,10 @@ npm install @rdsslab/svelte-components
 <div class="box">
 	<h3 class="title is-5">content_class personalizado</h3>
 	<p class="mb-4">Agregar clases CSS al contenedor del contenido renderizado.</p>
-	<MarkdownViewer markdown="**Texto con estilo custom**\n\nPárrafo de ejemplo." content_class="has-text-success" />
+	<MarkdownViewer
+		markdown="**Texto con estilo custom**\n\nPárrafo de ejemplo."
+		content_class="has-text-success"
+	/>
 </div>
 
 <!-- Example 11: Empty state -->
@@ -275,20 +288,15 @@ npm install @rdsslab/svelte-components
 	<div class="buttons mb-4">
 		<button
 			class="button is-small is-info"
-			onclick={() => markdownContent = `## Sección ${Math.floor(Math.random() * 100)}\n\nContenido generado dinámicamente.\n\n- Item 1\n- Item 2\n- Item 3`}
+			onclick={() =>
+				(markdownContent = `## Sección ${Math.floor(Math.random() * 100)}\n\nContenido generado dinámicamente.\n\n- Item 1\n- Item 2\n- Item 3`)}
 		>
 			Generar nuevo contenido
 		</button>
-		<button
-			class="button is-small is-warning"
-			onclick={() => markdownContent = ''}
-		>
+		<button class="button is-small is-warning" onclick={() => (markdownContent = '')}>
 			Limpiar
 		</button>
-		<button
-			class="button is-small is-success"
-			onclick={() => markdownContent = mixedMarkdown}
-		>
+		<button class="button is-small is-success" onclick={() => (markdownContent = mixedMarkdown)}>
 			Cargar documento completo
 		</button>
 	</div>
@@ -297,7 +305,9 @@ npm install @rdsslab/svelte-components
 		{#if markdownContent}
 			<MarkdownViewer bind:markdown={markdownContent} />
 		{:else}
-			<p class="has-text-grey has-text-centered py-4">Haz clic en un botón para generar contenido.</p>
+			<p class="has-text-grey has-text-centered py-4">
+				Haz clic en un botón para generar contenido.
+			</p>
 		{/if}
 	</div>
 </div>
@@ -313,7 +323,10 @@ npm install @rdsslab/svelte-components
 <div class="box">
 	<h3 class="title is-5">Referencia API</h3>
 
-	<pre class="mb-4" style="background: var(--app-bg); padding: 0.75rem; border-radius: 4px; font-size: 0.85rem;"><code>{`import { MarkdownViewer } from '@rdsslab/svelte-components';
+	<pre
+		class="mb-4"
+		style="background: var(--app-bg); padding: 0.75rem; border-radius: 4px; font-size: 0.85rem;"><code
+			>{`import { MarkdownViewer } from '@rdsslab/svelte-components';
 
 // Uso básico
 <MarkdownViewer markdown="## Hello World" />
@@ -330,7 +343,8 @@ npm install @rdsslab/svelte-components
 />
 
 // Bind bidireccional
-<MarkdownViewer bind:markdown={myState} />`}</code></pre>
+<MarkdownViewer bind:markdown={myState} />`}</code
+		></pre>
 
 	<table class="table is-fullwidth is-striped is-hoverable">
 		<thead>
@@ -358,7 +372,10 @@ npm install @rdsslab/svelte-components
 				<td><code>allow_html</code></td>
 				<td>boolean</td>
 				<td><code>false</code></td>
-				<td>Permitir HTML raw en el markdown. <code>false</code> lo escapa a texto plano (seguro contra XSS)</td>
+				<td
+					>Permitir HTML raw en el markdown. <code>false</code> lo escapa a texto plano (seguro contra
+					XSS)</td
+				>
 			</tr>
 			<tr>
 				<td><code>gfm</code></td>
@@ -388,7 +405,10 @@ npm install @rdsslab/svelte-components
 				<td><code>options</code></td>
 				<td>MarkedOptions</td>
 				<td><code>{'{'}{'}'}</code></td>
-				<td>Opciones adicionales para <code>marked.parse()</code>. El renderer seguro siempre tiene prioridad (protección XSS)</td>
+				<td
+					>Opciones adicionales para <code>marked.parse()</code>. El renderer seguro siempre tiene
+					prioridad (protección XSS)</td
+				>
 			</tr>
 		</tbody>
 	</table>

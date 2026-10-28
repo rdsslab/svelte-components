@@ -5,7 +5,7 @@
 	/**
 	 * Main wrapper component for the Application layout.
 	 * Provides a responsive Sidebar, dynamic Top Nav, and a Main Content area.
-	 * 
+	 *
 	 * @typedef {Object} AppBaseProps
 	 * @property {string} [logoText='LOGO TEXT'] - The text displayed on the sidebar logo.
 	 * @property {import('svelte').Snippet} [logoIcon] - A snippet providing the icon for the logo.
@@ -77,8 +77,6 @@
 			cleanupResize();
 		}
 	});
-
-
 </script>
 
 {#snippet iconFallback()}
@@ -103,7 +101,7 @@
 	class:icons-only={sidebarState === 'icons-only'}
 	class:expanded={sidebarState === 'hidden'}
 >
-	<Level left={left_items_tnv} bind:right={topRightNavBar}></Level>
+	<Level left={left_items_tnv} right={topRightNavBar}></Level>
 </span>
 
 <!-- Main Content -->
@@ -151,7 +149,6 @@
 			--border-color: rgba(255, 255, 255, 0.1);
 		}
 	}
-
 
 	/* Top Navigation */
 	.top-nav {

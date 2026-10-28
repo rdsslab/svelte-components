@@ -52,7 +52,6 @@
 		<!-- svelte-ignore a11y_missing_attribute -->
 		<li><a>Team Settings</a></li>
 		<li>
-			
 			<!-- svelte-ignore a11y_missing_attribute -->
 			<a class="is-active">Manage Your Team</a>
 			<ul>

@@ -78,9 +78,12 @@
 		highlightedHtml ? (showLineNumbers ? addLineNumbers(highlightedHtml) : highlightedHtml) : ''
 	);
 	let isEmpty = $derived(
-		jsonObject === undefined || jsonObject === null ||
-		(typeof jsonObject === 'object' && !Array.isArray(jsonObject) && Object.keys(jsonObject).length === 0) ||
-		(typeof jsonObject === 'string' && jsonObject.trim() === '')
+		jsonObject === undefined ||
+			jsonObject === null ||
+			(typeof jsonObject === 'object' &&
+				!Array.isArray(jsonObject) &&
+				Object.keys(jsonObject).length === 0) ||
+			(typeof jsonObject === 'string' && jsonObject.trim() === '')
 	);
 	let lineCount = $derived(formattedText ? formattedText.split('\n').length : 0);
 
@@ -110,7 +113,11 @@
 					<span class="jv-label">{label}</span>
 				{/if}
 				{#if showCopy && !isEmpty}
-					<button class="button is-small is-light jv-copy-btn" onclick={copyToClipboard} title="Copiar JSON">
+					<button
+						class="button is-small is-light jv-copy-btn"
+						onclick={copyToClipboard}
+						title="Copiar JSON"
+					>
 						<span class="icon is-small">
 							<i class={copied ? 'fa-solid fa-check' : 'fa-regular fa-copy'}></i>
 						</span>

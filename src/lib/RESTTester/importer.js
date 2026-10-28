@@ -1247,6 +1247,10 @@ function buildBody({
  *
  * @returns {{method: string, url: string, data: object, warnings: string[], notices: string[]}}
  */
+/**
+ * Arma el modelo de solicitud a partir de las partes parseadas.
+ * @returns {{method: string, url: string, data: object, warnings: string[], notices: string[], name: string, format?: string}}
+ */
 function assemble({
 	method,
 	url,
@@ -1711,8 +1715,8 @@ function unwrapCat(value) {
 }
 
 /**
- * Resuelve el valor de una opción de datos de curl, incluidos los heredocs
- * (`--data-binary @- <<'EOF'` y `--data-binary "$(cat <<'EOF' ...)"`).
+ * Resuelve el valor de una opcion de datos de curl, incluidos los heredocs.
+ * Maneja casos como data-binary y substitution.
  */
 function resolveCurlData(rawValue, peekValue, bodies, context) {
 	const peek = heredocIndexOf(peekValue);
@@ -2859,5 +2863,5 @@ export function parseRequestFile(text, { fileName = '', format } = {}) {
 		);
 	}
 
-	return { ...PARSERS[detected](source, { fileName }), format: detected, fileName };
+	return { ...PARSERS[detected](source, { fileName }), format: detected, fileName, name: '' };
 }

@@ -80,7 +80,7 @@ declare const Index: import("svelte").Component<{
      * - Specifies if the input is mandatory.
      */
     required?: boolean;
-} & Record<string, any>, {}, "value" | "type" | "min" | "max" | "label" | "placeholder" | "sizeClass" | "labelClass" | "step" | "isExpanded" | "accept" | "showUploadButton" | "pattern" | "required">;
+} & Record<string, any>, {}, "value" | "type" | "min" | "max" | "label" | "placeholder" | "accept" | "showUploadButton" | "sizeClass" | "labelClass" | "step" | "isExpanded" | "pattern" | "required">;
 /**
  * Represents the parameters supported by the basic Input component.
  */

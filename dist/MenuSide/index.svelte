@@ -179,8 +179,6 @@
 		box-sizing: border-box;
 	}
 
-
-
 	/* Overlay para móvil */
 	.overlay {
 		display: none;

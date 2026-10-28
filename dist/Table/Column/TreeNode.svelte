@@ -24,13 +24,13 @@
 			{#if Array.isArray(value)}
 				{#each value as item, index}
 					<li>
-						<TreeNode key={index} value={item} />
+						<TreeNode key={String(index)} value={item} />
 					</li>
 				{/each}
 			{:else}
 				{#each Object.entries(value) as [childKey, childValue]}
 					<li>
-						<TreeNode key={childKey} value={childValue} />
+						<TreeNode key={String(childKey)} value={childValue} />
 					</li>
 				{/each}
 			{/if}

@@ -3,7 +3,7 @@ type EditorCode = SvelteComponent<{
     left?: any;
     right?: any;
     reset?: () => void;
-    code?: string;
+    code?: any;
     onchange?: any;
     lang?: string;
     showFormat?: boolean;
@@ -30,7 +30,7 @@ declare const EditorCode: $$__sveltets_2_IsomorphicComponent<{
     left?: any;
     right?: any;
     reset?: () => void;
-    code?: string;
+    code?: any;
     onchange?: any;
     lang?: string;
     showFormat?: boolean;

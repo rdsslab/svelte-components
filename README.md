@@ -14,7 +14,7 @@ Import components directly from the library:
 
 ```svelte
 <script>
-  import { Table, Chart, Input, Modal } from '@rdsslab/svelte-components';
+	import { Table, Chart, Input, Modal } from '@rdsslab/svelte-components';
 </script>
 ```
 
@@ -25,23 +25,33 @@ Import components directly from the library:
 ### 🏗️ Layout & Navigation
 
 #### `AppBase`
+
 The main application shell layout. Includes a responsive sidebar, top navigation bar, and main content area.
+
 - **Props**: `logoText`, `logoIcon`, `menu`, `topRightNavBar`, `topLeftNavBar`.
 
 #### `Level`
+
 A responsive level component for horizontal alignment of items.
+
 - **Props**: `left` (array of snippets/components), `right` (array of snippets/components).
 
 #### `Menu`
+
 A side menu component supporting nested items and sections.
+
 - **Usage**: Used internally by `AppBase` or standalone.
 
 #### `Tab`
+
 A tabbed interface component.
+
 - **Props**: `tabs` (array of objects with `label`, `classIcon`, `component`), `active` (index).
 
 #### `SlideFullScreen`
+
 A full-screen overlay component that slides in.
+
 - **Props**: `show` (boolean).
 
 ---
@@ -49,7 +59,9 @@ A full-screen overlay component that slides in.
 ### 📊 Data Display
 
 #### `Table`
+
 A powerful data table with sorting, filtering, pagination, and export capabilities.
+
 - **Features**:
   - Automatic column generation or custom column configuration.
   - Sorting (including robust boolean/null handling).
@@ -62,11 +74,15 @@ A powerful data table with sorting, filtering, pagination, and export capabiliti
 - **Column persistence**: enabled by default (`persistColumns=true`). Set `storageKey` to a stable, unique per-table identifier (e.g. `storageKey="users"`) when two tables share the same column names, or to control the key explicitly. When `storageKey` is omitted, a stable automatic key is derived from the route and the column set. Set `persistColumns={false}` to keep the choice in memory only. Columns hidden by configuration in `columns` (including the internal `internal_hash_row`) are never exposed to the user; the toolbar dialog offers **Reset** (restore developer defaults) and **Hide all** (hide every configurable column at once).
 
 #### `Chart`
+
 Wrapper around Apache ECharts for rendering responsive charts.
+
 - **Props**: `option` (ECharts configuration object), `data`, `title`.
 
 #### `JSONView`
+
 A component to pretty-print JSON objects with syntax highlighting.
+
 - **Props**: `jsonObject`.
 
 ---
@@ -74,25 +90,34 @@ A component to pretty-print JSON objects with syntax highlighting.
 ### 📝 Form & Input
 
 #### `Input`
+
 A versatile input component supporting various types including text, numbers, dates, files, and more.
+
 - **Types**: `text`, `number`, `date`, `datetime-local`, `file`, `checkbox`, `boolean`.
 - **Props**: `value`, `label`, `placeholder`, `required`, `pattern`.
 - **Dependencies**: Uses `luxon` for date formatting.
 
 #### `BasicSelect`
+
 A styled select dropdown.
+
 - **Props**: `options` (array of `{id, value}`), `option` (selected value), `label`.
 
 #### `PredictiveInput`
+
 An input with auto-completion/suggestion capabilities.
 
 #### `EditorCode`
+
 A code editor component based on CodeMirror 6.
+
 - **Features**: Syntax highlighting, formatting (Prettier), read-only mode.
 - **Props**: `code` (string), `lang` ('js', 'json', 'html', etc.), `isReadOnly`.
 
 #### `FileUpload`
+
 A dedicated component for handling file uploads.
+
 - **Props**: `url`, `multiple`, `accept`.
 
 ---
@@ -100,15 +125,21 @@ A dedicated component for handling file uploads.
 ### 💬 Feedback & Modals
 
 #### `Modal`
+
 A basic modal dialog component.
+
 - **Props**: `show` (boolean).
 
 #### `DialogModal`
+
 A pre-configured modal for confirmations or alerts with title, body, and action buttons.
+
 - **Props**: `show`, `title`, `body`, `onaccept`, `oncancel`.
 
 #### `Notify`
+
 A notification system for displaying toast messages.
+
 - **Usage**: Place `<Notify />` in your root layout. Use `Notifications` utility to trigger messages.
 
 ---

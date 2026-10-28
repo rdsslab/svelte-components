@@ -24,7 +24,7 @@ const MAX_RECONNECT_DELAY = 30 * 1000; // Máx backoff 30s
 export class OpenFusionWebsocketClient extends EventTarget {
 	/**
 	 * Creates an instance of OpenFusionWebsocketClient.
-	 * 
+	 *
 	 * @param {string} url - The WebSocket URL to connect to (e.g., 'wss://example.com/socket').
 	 * @param {Object} [headers={}] - Optional headers. Note: standard browser WebSockets do not support custom headers natively.
 	 */
@@ -42,7 +42,7 @@ export class OpenFusionWebsocketClient extends EventTarget {
 
 	/**
 	 * Emits a custom event on this EventTarget instance.
-	 * 
+	 *
 	 * @param {string} type - The name of the event to emit.
 	 * @param {any} [detail] - Optional data payload attached to the event detail property.
 	 */
@@ -52,17 +52,18 @@ export class OpenFusionWebsocketClient extends EventTarget {
 
 	/**
 	 * Subscribes to an event emitted by this client (Node.js EventEmitter pattern style).
-	 * 
+	 *
 	 * @param {string} eventName - The name of the event to listen for ('message', 'open', etc.).
 	 * @param {function(any): void} callback - The callback function executed when the event is emitted. Receives the event `detail` as argument.
 	 */
 	on(eventName, callback) {
+		// @ts-ignore - CustomEvent.detail not available on Event type in JS
 		this.addEventListener(eventName, (event) => callback(event.detail));
 	}
 
 	/**
 	 * Unsubscribes from an event.
-	 * 
+	 *
 	 * @param {string} eventName - The name of the event.
 	 * @param {EventListener} callback - The original callback function to remove.
 	 */
@@ -101,7 +102,10 @@ export class OpenFusionWebsocketClient extends EventTarget {
 		};
 
 		ws.onerror = (error) => {
-			console.error('❌ Error en WebSocket:', error.message);
+			console.error(
+				'❌ Error en WebSocket:',
+				error instanceof Error ? error.message : String(error)
+			);
 		};
 	}
 
@@ -132,7 +136,7 @@ export class OpenFusionWebsocketClient extends EventTarget {
 
 	/**
 	 * Sends a JSON stringified message through the WebSocket if it is open.
-	 * 
+	 *
 	 * @param {Object} message - The message object to be stringified and sent.
 	 */
 	send(message) {
@@ -145,7 +149,7 @@ export class OpenFusionWebsocketClient extends EventTarget {
 
 	/**
 	 * Subscribes to a specific channel by sending a `/subscribe` message.
-	 * 
+	 *
 	 * @param {string} channel - The name of the channel to subscribe to.
 	 */
 	subscribe(channel) {
@@ -159,7 +163,7 @@ export class OpenFusionWebsocketClient extends EventTarget {
 	 * Internal handler for parsing received WebSocket messages.
 	 * Clears pong timeouts if a `/pong` message is received.
 	 * Emits a 'message' event for all other data.
-	 * 
+	 *
 	 * @param {Object} data - The parsed message data from the WebSocket.
 	 * @param {string} [data.channel] - The channel of the message.
 	 */
@@ -212,4 +216,4 @@ client.on("open", () => {
 setTimeout(() => {
   client.send({ type: "test", data: "Hola desde el navegador" });
 }, 2000);
-*/
+*/

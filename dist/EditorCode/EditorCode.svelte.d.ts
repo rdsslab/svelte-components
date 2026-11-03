@@ -1,66 +1,41 @@
 export default EditorCode;
-type EditorCode = SvelteComponent<{
-    left?: any;
-    right?: any;
-    reset?: () => void;
-    code?: any;
-    onchange?: any;
-    lang?: string;
-    showFormat?: boolean;
-    showSelectLang?: boolean;
-    isReadOnly?: boolean;
-    showHiddenButton?: boolean;
-    showResetButton?: boolean;
-    showCode?: boolean;
-    containerTestId?: any;
-    setCode?: (newCode: any) => void;
-    getCode?: () => any;
-}, {
-    change: CustomEvent<any>;
-} & {
-    [evt: string]: CustomEvent<any>;
-}, {}> & {
-    $$bindings?: string;
+type EditorCode = {
+    $on?(type: string, callback: (e: any) => void): () => void;
+    $set?(props: Partial<$$ComponentProps>): void;
 } & {
     setCode: (newCode: any) => void;
     getCode: () => any;
     reset: () => void;
 };
-declare const EditorCode: $$__sveltets_2_IsomorphicComponent<{
+declare const EditorCode: import("svelte").Component<{
+    code?: any;
     left?: any;
     right?: any;
-    reset?: () => void;
-    code?: any;
-    onchange?: any;
     lang?: string;
     showFormat?: boolean;
     showSelectLang?: boolean;
     isReadOnly?: boolean;
     showHiddenButton?: boolean;
     showResetButton?: boolean;
-    showCode?: boolean;
     containerTestId?: any;
-    setCode?: (newCode: any) => void;
-    getCode?: () => any;
+    onchange?: any;
+    showCode?: boolean;
 }, {
-    change: CustomEvent<any>;
-} & {
-    [evt: string]: CustomEvent<any>;
-}, {}, {
     setCode: (newCode: any) => void;
     getCode: () => any;
     reset: () => void;
-}, string>;
-interface $$__sveltets_2_IsomorphicComponent<Props extends Record<string, any> = any, Events extends Record<string, any> = any, Slots extends Record<string, any> = any, Exports = {}, Bindings = string> {
-    new (options: import("svelte").ComponentConstructorOptions<Props>): import("svelte").SvelteComponent<Props, Events, Slots> & {
-        $$bindings?: Bindings;
-    } & Exports;
-    (internal: unknown, props: Props & {
-        $$events?: Events;
-        $$slots?: Slots;
-    }): Exports & {
-        $set?: any;
-        $on?: any;
-    };
-    z_$$bindings?: Bindings;
-}
+}, "code" | "lang" | "showCode">;
+type $$ComponentProps = {
+    code?: any;
+    left?: any;
+    right?: any;
+    lang?: string;
+    showFormat?: boolean;
+    showSelectLang?: boolean;
+    isReadOnly?: boolean;
+    showHiddenButton?: boolean;
+    showResetButton?: boolean;
+    containerTestId?: any;
+    onchange?: any;
+    showCode?: boolean;
+};

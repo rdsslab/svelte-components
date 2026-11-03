@@ -1,5 +1,5 @@
 <script>
-	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { Level } from '../index.js';
 	import { EditorState, StateEffect } from '@codemirror/state';
 	import { EditorView, basicSetup } from 'codemirror';
@@ -14,37 +14,48 @@
 	import prettierPluginHtml from 'prettier/plugins/html.mjs';
 	import prettierPluginSql from 'prettier-plugin-sql';
 
-	const dispatch = createEventDispatcher();
-
-	/** @type {any} */
-	export let code = '';
-	export let left = null;
-	export let right = null;
-	export let lang = 'json';
-	export let showFormat = false;
-	export let showSelectLang = false;
-	export let isReadOnly = false;
-	export let showHiddenButton = true;
-	export let showResetButton = false;
-	export let showCode = true;
-
+	// --- Props (runes $props) ---
 	/**
-	 * `data-testid` para distinguir varios EditorCode en la misma pagina.
+	 * @param {any} code - Código del editor: texto, objeto, número o booleano.
+	 * @param {any} left - Snippet (o array de snippets) para la columna izquierda.
+	 * @param {any} right - Snippet (o array de snippets) para la columna derecha.
+	 * @param {any} lang - Lenguaje del editor.
+	 * @param {boolean} showFormat - Mostrar botón de formateo.
+	 * @param {boolean} showSelectLang - Mostrar selector de lenguaje.
+	 * @param {boolean} isReadOnly - Editor de solo lectura.
+	 * @param {boolean} showHiddenButton - Mostrar botón ocultar/mostrar código.
+	 * @param {boolean} showResetButton - Mostrar botón de reset.
+	 * @param {any} containerTestId - `data-testid` del contenedor.
+	 * @param {any} onchange - Callback de cambio.
+	 * @param {boolean} showCode - ¿Está visible el código?
 	 *
-	 * No hay forma de distinguir uno suelto por su contenido: los valores son
-	 * justamente lo que se esta probando, asi que un selector basado en el texto
-	 * cambiaria en el momento en que la prueba necesita comprobar que cambio.
+	 * `code` y `lang` son `$bindable` para que `bind:code={...}` /
+	 * `bind:lang={...}` del padre reciban los cambios del editor.
 	 */
-	export let containerTestId = null;
+	let {
+		code = $bindable(),
+		left = null,
+		right = null,
+		lang = $bindable('json'),
+		showFormat = false,
+		showSelectLang = false,
+		isReadOnly = false,
+		showHiddenButton = true,
+		showResetButton = false,
+		containerTestId = null,
+		onchange = null,
+		showCode = $bindable(true)
+	} = $props();
 
-	export let onchange = null;
+	// Estado interno reactivo (se lee en el template y se modifica desde dentro).
+	let formatError = $state(false);
+	let isDarkMode = $state(false);
 
 	let editorView = null;
 	let containerEl;
 	let initialized = false;
 	let internalCode = '';
 	let lastCode = '';
-	let formatError = false;
 	// El texto exacto que el editor esta mostrando porque se lo pusimos nosotros a
 	// partir de un valor que no era texto. Sirve para no reenviarlo hacia arriba: si el
 	// usuario no ha escrito nada, ese texto es una representacion nuestra, no su
@@ -105,7 +116,6 @@
 
 	// Dark mode: detect system preference
 	let mediaQuery = null;
-	let isDarkMode = false;
 
 	function createExtensions() {
 		const langExt = languages[lang] || [];
@@ -233,11 +243,9 @@
 		if (payload.lang === 'number') {
 			if (payload.typeof === 'number' && !Number.isNaN(payload.code)) {
 				if (typeof onchange === 'function') onchange(payload);
-				dispatch('change', payload);
 			}
 		} else {
 			if (typeof onchange === 'function') onchange(payload);
-			dispatch('change', payload);
 		}
 	}
 
@@ -336,21 +344,25 @@
 		clearTimeout(debounceTimer);
 	});
 
-	// Reactividad: si cambian propiedades claves, reconfigurar editor
-	$: if (initialized && (lang || isReadOnly)) {
-		reconfigureExtensions();
-	}
-
-	$: if (initialized && code !== undefined) {
-		const editorText = editorView ? editorView.state.doc.toString() : '';
-		// El tercer `String()` de este componente, y el que masaba: comparar el texto
-		// del editor contra `String(code)` hacia que un objeto se escribiera en pantalla
-		// como "[object Object]" en cuanto el valor llegaba del padre.
-		const candidateText = valueToText(code, lang);
-		if (candidateText !== editorText) {
-			updateEditorFromProp(code);
+	// Reactividad (runes): si cambian propiedades claves, reconfigurar editor
+	$effect(() => {
+		if (initialized && (lang || isReadOnly)) {
+			reconfigureExtensions();
 		}
-	}
+	});
+
+	$effect(() => {
+		if (initialized && code !== undefined) {
+			const editorText = editorView ? editorView.state.doc.toString() : '';
+			// El tercer `String()` de este componente, y el que masaba: comparar el texto
+			// del editor contra `String(code)` hacia que un objeto se escribiera en pantalla
+			// como "[object Object]" en cuanto el valor llegaba del padre.
+			const candidateText = valueToText(code, lang);
+			if (candidateText !== editorText) {
+				updateEditorFromProp(code);
+			}
+		}
+	});
 
 	// -----------------------
 	// Helpers: formateo con Prettier
